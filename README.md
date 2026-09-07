@@ -1,17 +1,21 @@
-# Zenith Granular — Fase 2 (SamplerEngine)
+# Zenith Granular — Fase 3 (GranularEngine)
 
-Este é o esqueleto compilável do plugin, agora com o `SamplerEngine`:
-carrega um `.wav`, toca por nota MIDI, com ADSR e pitch em tempo real.
+Este é o esqueleto compilável do plugin, agora com granulação real:
+o `SamplerEngine` mistura leitura normal do sample com uma nuvem de grãos.
 
 ## O que este código faz
-- Regista o plugin como **instrumento** (aparece no Channel Rack do FL Studio,
-  não no Mixer).
-- Botão **"Load Sample..."** na UI abre o explorador de ficheiros e carrega
-  qualquer `.wav`.
-- Toca o sample por nota MIDI (a nota C4/60 toca no pitch original; outras
-  notas transpõem automaticamente).
-- 6 knobs ligados em tempo real e automatizáveis pelo DAW: Attack, Decay,
-  Sustain, Release, Pitch, Fine Tune.
+- Regista o plugin como **instrumento** (Channel Rack do FL Studio).
+- Botão **"Load Sample..."** ou **arrastar e largar** um ficheiro de áudio
+  direto na janela do plugin.
+- Formatos suportados: WAV, AIFF, FLAC, OGG, MP3, M4A, WMA.
+- 6 knobs do sampler: Attack, Decay, Sustain, Release, Pitch, Fine Tune.
+- 8 knobs do granulador: Grain Size, Density, Position, Position Random,
+  Grain Pitch, Pitch Random, Pan Spread, e **Granular Mix** (0% = só o
+  sampler normal, 100% = só a textura granular — os dois se misturam).
+- O sample carregado é lembrado entre sessões do projeto `.flp`.
+
+## Próximo passo (Fase 4)
+Implementar o `TextureEngine`/FX: filtro, saturação, delay e reverb.
 
 ## Como compilar (Windows, gratuito)
 1. Instala o [CMake](https://cmake.org/download/) e o
@@ -38,6 +42,4 @@ carrega um `.wav`, toca por nota MIDI, com ADSR e pitch em tempo real.
 `dir /s /b *.vst3` — isso procura em todas as subpastas e mostra o caminho
 exato de qualquer `.vst3` gerado, mesmo que tenha ficado em Debug.
 
-## Próximo passo (Fase 3)
-Implementar o `GranularEngine`: dividir o sample em grãos, com grain size,
-density, position e pitch controláveis.
+

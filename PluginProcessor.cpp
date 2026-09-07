@@ -14,7 +14,15 @@ ZenithGranularAudioProcessor::ZenithGranularAudioProcessor()
         apvts.getRawParameterValue ("samplerSustain"),
         apvts.getRawParameterValue ("samplerRelease"),
         apvts.getRawParameterValue ("samplerPitch"),
-        apvts.getRawParameterValue ("samplerFineTune")
+        apvts.getRawParameterValue ("samplerFineTune"),
+        apvts.getRawParameterValue ("grainSize"),
+        apvts.getRawParameterValue ("grainDensity"),
+        apvts.getRawParameterValue ("grainPosition"),
+        apvts.getRawParameterValue ("grainPositionRandom"),
+        apvts.getRawParameterValue ("grainPitch"),
+        apvts.getRawParameterValue ("grainPitchRandom"),
+        apvts.getRawParameterValue ("grainPan"),
+        apvts.getRawParameterValue ("granularMix")
     });
 }
 
@@ -47,6 +55,38 @@ juce::AudioProcessorValueTreeState::ParameterLayout ZenithGranularAudioProcessor
     params.push_back (std::make_unique<juce::AudioParameterFloat> (
         juce::ParameterID { "samplerFineTune", 1 }, "Fine Tune",
         juce::NormalisableRange<float> (-100.0f, 100.0f, 0.1f), 0.0f, "cents"));
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "grainSize", 1 }, "Grain Size",
+        juce::NormalisableRange<float> (10.0f, 500.0f, 1.0f), 80.0f, "ms"));
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "grainDensity", 1 }, "Grain Density",
+        juce::NormalisableRange<float> (1.0f, 100.0f, 0.1f), 20.0f, "/s"));
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "grainPosition", 1 }, "Grain Position",
+        juce::NormalisableRange<float> (0.0f, 100.0f, 0.1f), 0.0f, "%"));
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "grainPositionRandom", 1 }, "Position Random",
+        juce::NormalisableRange<float> (0.0f, 100.0f, 0.1f), 0.0f, "%"));
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "grainPitch", 1 }, "Grain Pitch",
+        juce::NormalisableRange<float> (-24.0f, 24.0f, 0.01f), 0.0f, "st"));
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "grainPitchRandom", 1 }, "Pitch Random",
+        juce::NormalisableRange<float> (0.0f, 100.0f, 0.1f), 0.0f, "%"));
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "grainPan", 1 }, "Grain Pan Spread",
+        juce::NormalisableRange<float> (0.0f, 100.0f, 0.1f), 50.0f, "%"));
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "granularMix", 1 }, "Granular Mix",
+        juce::NormalisableRange<float> (0.0f, 100.0f, 0.1f), 0.0f, "%"));
 
     return { params.begin(), params.end() };
 }
