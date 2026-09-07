@@ -90,7 +90,7 @@ void ZenithGranularAudioProcessorEditor::resized()
     auto knobRow = area.removeFromTop (110);
     const int knobWidth = knobRow.getWidth() / 6;
 
-    for (auto* pair : { std::pair<juce::Slider*, juce::Label*> (&attackSlider, &attackLabel),
+    for (auto& pair : { std::pair<juce::Slider*, juce::Label*> (&attackSlider, &attackLabel),
                          std::pair<juce::Slider*, juce::Label*> (&decaySlider, &decayLabel),
                          std::pair<juce::Slider*, juce::Label*> (&sustainSlider, &sustainLabel),
                          std::pair<juce::Slider*, juce::Label*> (&releaseSlider, &releaseLabel),
