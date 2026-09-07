@@ -1,0 +1,25 @@
+name: Build VST3 plugin
+
+# Corre automaticamente sempre que fizeres "push" de código para o repositório.
+on:
+  push:
+  workflow_dispatch: # também permite correr manualmente pelo site do GitHub
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Buscar o código do projeto
+        uses: actions/checkout@v4
+
+      - name: Configurar o projeto com o CMake
+        run: cmake -B build
+
+      - name: Compilar (Release)
+        run: cmake --build build --config Release
+
+      - name: Guardar o .vst3 compilado como download
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZenithGranular-VST3-Windows
+          path: build/ZenithGranular_artefacts/Release/VST3/
