@@ -54,9 +54,9 @@ ZenithGranularAudioProcessorEditor::~ZenithGranularAudioProcessorEditor() = defa
 
 void ZenithGranularAudioProcessorEditor::openFileChooser()
 {
-    fileChooser = std::make_unique<juce::FileChooser> ("Escolhe um ficheiro .wav",
+    fileChooser = std::make_unique<juce::FileChooser> ("Escolhe um ficheiro de áudio",
                                                          juce::File(),
-                                                         "*.wav");
+                                                         "*.wav;*.aiff;*.flac;*.ogg;*.mp3;*.m4a;*.wma");
 
     const auto flags = juce::FileBrowserComponent::openMode
                       | juce::FileBrowserComponent::canSelectFiles;

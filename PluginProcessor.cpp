@@ -103,6 +103,14 @@ void ZenithGranularAudioProcessor::setCurrentProgram (int) {}
 const juce::String ZenithGranularAudioProcessor::getProgramName (int) { return {}; }
 void ZenithGranularAudioProcessor::changeProgramName (int, const juce::String&) {}
 
+void ZenithGranularAudioProcessor::loadSample (const juce::File& file)
+{
+    samplerEngine.loadSample (file);
+    // Guarda o caminho no estado do plugin — assim, quando o FL Studio
+    // guardar o projeto (.flp) e reabrir depois, sabemos qual sample recarregar.
+    apvts.state.setProperty ("samplePath", file.getFullPathName(), nullptr);
+}
+
 void ZenithGranularAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();
@@ -115,7 +123,18 @@ void ZenithGranularAudioProcessor::setStateInformation (const void* data, int si
 {
     std::unique_ptr<juce::XmlElement> xml (getXmlFromBinary (data, sizeInBytes));
     if (xml != nullptr && xml->hasTagName (apvts.state.getType()))
+    {
         apvts.replaceState (juce::ValueTree::fromXml (*xml));
+
+        // Se o projeto já tinha um sample carregado, recarrega-o agora
+        // (ex.: ao reabrir um .flp que já usava este plugin).
+        if (apvts.state.hasProperty ("samplePath"))
+        {
+            juce::File file (apvts.state.getProperty ("samplePath").toString());
+            if (file.existsAsFile())
+                samplerEngine.loadSample (file);
+        }
+    }
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

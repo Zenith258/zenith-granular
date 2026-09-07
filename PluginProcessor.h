@@ -43,7 +43,7 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     // --- API usada pela UI ---
-    void loadSample (const juce::File& file) { samplerEngine.loadSample (file); }
+    void loadSample (const juce::File& file);
     bool hasSampleLoaded() const { return samplerEngine.hasSampleLoaded(); }
 
     juce::AudioProcessorValueTreeState apvts;
