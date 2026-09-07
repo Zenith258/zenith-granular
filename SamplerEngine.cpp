@@ -2,7 +2,15 @@
 
 SamplerEngine::SamplerEngine()
 {
-    formatManager.registerBasicFormats();
+    formatManager.registerBasicFormats(); // WAV, AIFF
+    formatManager.registerFormat (new juce::FlacAudioFormat(), false);
+    formatManager.registerFormat (new juce::OggVorbisAudioFormat(), false);
+
+   #if JUCE_WINDOWS
+    // No Windows, isto usa os codecs do próprio sistema (Media Foundation)
+    // para decodificar MP3, M4A/AAC e WMA — não precisa de bibliotecas extra.
+    formatManager.registerFormat (new juce::WindowsMediaAudioFormat(), false);
+   #endif
 
     for (int i = 0; i < numVoices; ++i)
         synth.addVoice (new ZenithSamplerVoice (voiceParams));
