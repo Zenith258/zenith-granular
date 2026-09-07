@@ -3,18 +3,57 @@
 
 ZenithGranularAudioProcessor::ZenithGranularAudioProcessor()
     : AudioProcessor (BusesProperties()
-                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true))
+                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
+      apvts (*this, nullptr, "PARAMETERS", createParameterLayout())
 {
+    // Liga a engine aos valores ao vivo da APVTS — cada voz vai ler estes
+    // ponteiros diretamente, sem cópias, sem alocações na audio thread.
+    samplerEngine.connectParameters ({
+        apvts.getRawParameterValue ("samplerAttack"),
+        apvts.getRawParameterValue ("samplerDecay"),
+        apvts.getRawParameterValue ("samplerSustain"),
+        apvts.getRawParameterValue ("samplerRelease"),
+        apvts.getRawParameterValue ("samplerPitch"),
+        apvts.getRawParameterValue ("samplerFineTune")
+    });
 }
 
 ZenithGranularAudioProcessor::~ZenithGranularAudioProcessor() = default;
 
-void ZenithGranularAudioProcessor::prepareToPlay (double sampleRate, int /*samplesPerBlock*/)
+juce::AudioProcessorValueTreeState::ParameterLayout ZenithGranularAudioProcessor::createParameterLayout()
 {
-    // Chamado uma vez antes do áudio começar a correr — é aqui, e não no
-    // processBlock, que qualquer buffer deve ser pré-alocado (regra de CPU
-    // da arquitetura: nada de alocações dinâmicas na audio thread).
-    currentSampleRate = sampleRate;
+    std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "samplerAttack", 1 }, "Attack",
+        juce::NormalisableRange<float> (0.0f, 5000.0f, 1.0f), 5.0f, "ms"));
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "samplerDecay", 1 }, "Decay",
+        juce::NormalisableRange<float> (0.0f, 5000.0f, 1.0f), 200.0f, "ms"));
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "samplerSustain", 1 }, "Sustain",
+        juce::NormalisableRange<float> (0.0f, 100.0f, 0.1f), 100.0f, "%"));
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "samplerRelease", 1 }, "Release",
+        juce::NormalisableRange<float> (0.0f, 5000.0f, 1.0f), 300.0f, "ms"));
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "samplerPitch", 1 }, "Pitch",
+        juce::NormalisableRange<float> (-24.0f, 24.0f, 0.01f), 0.0f, "st"));
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "samplerFineTune", 1 }, "Fine Tune",
+        juce::NormalisableRange<float> (-100.0f, 100.0f, 0.1f), 0.0f, "cents"));
+
+    return { params.begin(), params.end() };
+}
+
+void ZenithGranularAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+{
+    samplerEngine.prepare (sampleRate, samplesPerBlock);
 }
 
 void ZenithGranularAudioProcessor::releaseResources()
@@ -23,7 +62,6 @@ void ZenithGranularAudioProcessor::releaseResources()
 
 bool ZenithGranularAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
-    // Só aceitamos saída estéreo por agora.
     return layouts.getMainOutputChannelSet() == juce::AudioChannelSet::stereo();
 }
 
@@ -32,21 +70,11 @@ void ZenithGranularAudioProcessor::processBlock (juce::AudioBuffer<float>& buffe
 {
     juce::ScopedNoDenormals noDenormals;
 
-    // Limpa qualquer canal extra que o host possa ter alocado.
     for (auto ch = getTotalNumInputChannels(); ch < getTotalNumOutputChannels(); ++ch)
         buffer.clear (ch, 0, buffer.getNumSamples());
 
-    // FASE 1: ainda não geramos som. Só garantimos que o buffer sai limpo
-    // (silêncio) e que as mensagens MIDI são recebidas sem crashar —
-    // isto é o que prova que o "instrumento" está corretamente registado.
     buffer.clear();
-
-    for (const auto metadata : midiMessages)
-    {
-        const auto message = metadata.getMessage();
-        juce::ignoreUnused (message);
-        // Na FASE 2: noteOn/noteOff vão disparar o SamplerEngine aqui.
-    }
+    samplerEngine.renderNextBlock (buffer, midiMessages, 0, buffer.getNumSamples());
 }
 
 juce::AudioProcessorEditor* ZenithGranularAudioProcessor::createEditor()
@@ -75,16 +103,21 @@ void ZenithGranularAudioProcessor::setCurrentProgram (int) {}
 const juce::String ZenithGranularAudioProcessor::getProgramName (int) { return {}; }
 void ZenithGranularAudioProcessor::changeProgramName (int, const juce::String&) {}
 
-void ZenithGranularAudioProcessor::getStateInformation (juce::MemoryBlock& /*destData*/)
+void ZenithGranularAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    // Na FASE 7 (Presets), isto vai serializar o AudioProcessorValueTreeState.
+    auto state = apvts.copyState();
+    std::unique_ptr<juce::XmlElement> xml (state.createXml());
+    if (xml != nullptr)
+        copyXmlToBinary (*xml, destData);
 }
 
-void ZenithGranularAudioProcessor::setStateInformation (const void* /*data*/, int /*sizeInBytes*/)
+void ZenithGranularAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
+    std::unique_ptr<juce::XmlElement> xml (getXmlFromBinary (data, sizeInBytes));
+    if (xml != nullptr && xml->hasTagName (apvts.state.getType()))
+        apvts.replaceState (juce::ValueTree::fromXml (*xml));
 }
 
-// Ponto de entrada que o JUCE usa para criar o processor.
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new ZenithGranularAudioProcessor();

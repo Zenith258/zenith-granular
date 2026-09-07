@@ -32,7 +32,8 @@ juce_add_plugin(ZenithGranular
 target_sources(ZenithGranular
     PRIVATE
         PluginProcessor.cpp
-        PluginEditor.cpp)
+        PluginEditor.cpp
+        SamplerEngine.cpp)
 
 target_compile_definitions(ZenithGranular
     PUBLIC

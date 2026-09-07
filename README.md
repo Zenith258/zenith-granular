@@ -1,13 +1,17 @@
-# Zenith Granular — Fase 1 (plugin mínimo)
+# Zenith Granular — Fase 2 (SamplerEngine)
 
-Este é o esqueleto compilável do plugin, conforme a Fase 1 do roteiro:
-JUCE project + PluginProcessor + PluginEditor + VST3, sem DSP real ainda.
+Este é o esqueleto compilável do plugin, agora com o `SamplerEngine`:
+carrega um `.wav`, toca por nota MIDI, com ADSR e pitch em tempo real.
 
 ## O que este código faz
 - Regista o plugin como **instrumento** (aparece no Channel Rack do FL Studio,
   não no Mixer).
-- Aceita MIDI e devolve um bloco de áudio válido (silêncio) sem crashar.
-- Abre um editor simples só para confirmar que a UI está ligada ao processor.
+- Botão **"Load Sample..."** na UI abre o explorador de ficheiros e carrega
+  qualquer `.wav`.
+- Toca o sample por nota MIDI (a nota C4/60 toca no pitch original; outras
+  notas transpõem automaticamente).
+- 6 knobs ligados em tempo real e automatizáveis pelo DAW: Attack, Decay,
+  Sustain, Release, Pitch, Fine Tune.
 
 ## Como compilar (Windows, gratuito)
 1. Instala o [CMake](https://cmake.org/download/) e o
@@ -34,5 +38,6 @@ JUCE project + PluginProcessor + PluginEditor + VST3, sem DSP real ainda.
 `dir /s /b *.vst3` — isso procura em todas as subpastas e mostra o caminho
 exato de qualquer `.vst3` gerado, mesmo que tenha ficado em Debug.
 
-## Próximo passo (Fase 2)
-Implementar o `SamplerEngine`: carregar um `.wav`, tocar por MIDI, com ADSR e pitch.
+## Próximo passo (Fase 3)
+Implementar o `GranularEngine`: dividir o sample em grãos, com grain size,
+density, position e pitch controláveis.

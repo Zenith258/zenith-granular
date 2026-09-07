@@ -1,12 +1,12 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include "SamplerEngine.h"
 
 /**
-    FASE 1 — Plugin mínimo.
-    Objetivo desta fase: ter um plugin de instrumento que compila, carrega no DAW,
-    aceita MIDI e não produz crash nem ruído indevido. Nenhum DSP real ainda —
-    isso entra na FASE 2 (SamplerEngine).
+    FASE 2 — SamplerEngine ligado. O plugin agora carrega um .wav (via botão
+    na UI) e toca-o por nota MIDI, com ADSR e pitch controláveis em tempo real
+    pelos parâmetros da APVTS (para depois seres automatizável no DAW).
 */
 class ZenithGranularAudioProcessor : public juce::AudioProcessor
 {
@@ -42,11 +42,16 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    // --- API usada pela UI ---
+    void loadSample (const juce::File& file) { samplerEngine.loadSample (file); }
+    bool hasSampleLoaded() const { return samplerEngine.hasSampleLoaded(); }
+
+    juce::AudioProcessorValueTreeState apvts;
+
 private:
-    // Placeholder: na FASE 2 isto vira o SamplerEngine (carregamento de sample,
-    // ADSR, pitch). Por agora existe só para provar que o plugin recebe MIDI
-    // e devolve um bloco de áudio válido (silêncio) sem crashar.
-    double currentSampleRate = 44100.0;
+    static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+
+    SamplerEngine samplerEngine;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ZenithGranularAudioProcessor)
 };
