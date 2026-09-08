@@ -1,12 +1,16 @@
-# Zenith Granular — Fase 5 (Macros)
+# Zenith Granular — Fase 6 (Presets)
 
-4 macros (Space, Texture, Movement, Chaos) numa 4ª aba — cada um move vários
-parâmetros de destino ao mesmo tempo, sem precisar de mexer no DSP.
+Guarda/carrega o estado completo do plugin (todos os knobs + o sample) com
+um nome, na pasta de dados do utilizador — funciona em qualquer projeto do
+FL Studio, não só no que foi guardado.
 
 ## O que este código faz
 - Regista o plugin como **instrumento** (Channel Rack do FL Studio).
 - Botão **"Load Sample..."** ou **arrastar e largar** um ficheiro de áudio.
 - Formatos suportados: WAV, AIFF, FLAC, OGG, MP3, M4A, WMA.
+- **Presets**: dropdown com a lista de presets guardados, botão Save (pede
+  um nome) e Delete. Ficam em
+  `%APPDATA%\ZenithGranular\Presets\*.zgpreset` no Windows.
 - Interface em 4 abas: Sampler, Granular, FX, Macros.
 - Sampler: Attack, Decay, Sustain, Release, Pitch, Fine Tune.
 - Granulador: Grain Size, Density, Position, Position Random, Grain Pitch,
@@ -15,10 +19,11 @@ parâmetros de destino ao mesmo tempo, sem precisar de mexer no DSP.
   Drive/Mix), Delay (Time/Feedback/Mix), Reverb (Size/Damping/Mix).
 - Macros: Space (Reverb+Delay Mix), Texture (Granular Mix+Density), Movement
   (Position Random+Pan Spread), Chaos (Pitch Random+Saturation Drive/Mix).
-- O sample carregado é lembrado entre sessões do projeto `.flp`.
+- O sample carregado é lembrado entre sessões do projeto `.flp` e dentro
+  dos presets.
 
-## Próximo passo (Fase 6)
-Sistema de presets (guardar/carregar patches completos e FX racks).
+## Próximo passo (Fase 6b)
+Biblioteca nativa de samples (packs próprios embutidos no plugin).
 
 ## Como compilar (Windows, gratuito)
 1. Instala o [CMake](https://cmake.org/download/) e o

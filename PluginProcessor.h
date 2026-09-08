@@ -6,6 +6,7 @@
 #include "SaturationEngine.h"
 #include "DelayEngine.h"
 #include "ReverbEngine.h"
+#include "PresetManager.h"
 
 /**
     FASE 2 — SamplerEngine ligado. O plugin agora carrega um .wav (via botão
@@ -50,16 +51,24 @@ public:
     void loadSample (const juce::File& file);
     bool hasSampleLoaded() const { return samplerEngine.hasSampleLoaded(); }
 
+    // --- Presets (Fase 6) ---
+    void savePreset (const juce::String& name) { presetManager.savePreset (name); }
+    void loadPreset (const juce::String& name) { presetManager.loadPreset (name); reloadSampleFromState(); }
+    void deletePreset (const juce::String& name) { presetManager.deletePreset (name); }
+    juce::StringArray getAllPresets() const { return presetManager.getAllPresets(); }
+
     juce::AudioProcessorValueTreeState apvts;
 
 private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+    void reloadSampleFromState();
 
     SamplerEngine samplerEngine;
     FilterEngine filterEngine;
     SaturationEngine saturationEngine;
     DelayEngine delayEngine;
     ReverbEngine reverbEngine;
+    PresetManager presetManager { apvts };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ZenithGranularAudioProcessor)
 };

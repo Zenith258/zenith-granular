@@ -266,21 +266,23 @@ void ZenithGranularAudioProcessor::getStateInformation (juce::MemoryBlock& destD
         copyXmlToBinary (*xml, destData);
 }
 
+void ZenithGranularAudioProcessor::reloadSampleFromState()
+{
+    if (apvts.state.hasProperty ("samplePath"))
+    {
+        juce::File file (apvts.state.getProperty ("samplePath").toString());
+        if (file.existsAsFile())
+            samplerEngine.loadSample (file);
+    }
+}
+
 void ZenithGranularAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     std::unique_ptr<juce::XmlElement> xml (getXmlFromBinary (data, sizeInBytes));
     if (xml != nullptr && xml->hasTagName (apvts.state.getType()))
     {
         apvts.replaceState (juce::ValueTree::fromXml (*xml));
-
-        // Se o projeto já tinha um sample carregado, recarrega-o agora
-        // (ex.: ao reabrir um .flp que já usava este plugin).
-        if (apvts.state.hasProperty ("samplePath"))
-        {
-            juce::File file (apvts.state.getProperty ("samplePath").toString());
-            if (file.existsAsFile())
-                samplerEngine.loadSample (file);
-        }
+        reloadSampleFromState();
     }
 }
 

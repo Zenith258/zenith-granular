@@ -37,7 +37,8 @@ target_sources(ZenithGranular
         FilterEngine.cpp
         SaturationEngine.cpp
         DelayEngine.cpp
-        ReverbEngine.cpp)
+        ReverbEngine.cpp
+        PresetManager.cpp)
 
 target_compile_definitions(ZenithGranular
     PUBLIC

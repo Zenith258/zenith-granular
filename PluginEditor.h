@@ -76,10 +76,17 @@ private:
 
     void openFileChooser();
     void loadFile (const juce::File& file);
+    void refreshPresetList();
+    void promptSavePreset();
 
     ZenithGranularAudioProcessor& audioProcessor;
 
     juce::Label titleLabel;
+    juce::ComboBox presetBox;
+    juce::TextButton savePresetButton { "Save" };
+    juce::TextButton deletePresetButton { "Delete" };
+    std::unique_ptr<juce::AlertWindow> presetNameWindow;
+
     juce::TextButton loadButton { "Load Sample..." };
     juce::Label statusLabel;
 

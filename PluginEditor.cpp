@@ -200,6 +200,30 @@ ZenithGranularAudioProcessorEditor::ZenithGranularAudioProcessorEditor (ZenithGr
     titleLabel.setJustificationType (juce::Justification::centred);
     addAndMakeVisible (titleLabel);
 
+    presetBox.onChange = [this]
+    {
+        const auto name = presetBox.getText();
+        if (name.isNotEmpty())
+            audioProcessor.loadPreset (name);
+    };
+    addAndMakeVisible (presetBox);
+
+    savePresetButton.onClick = [this] { promptSavePreset(); };
+    addAndMakeVisible (savePresetButton);
+
+    deletePresetButton.onClick = [this]
+    {
+        const auto name = presetBox.getText();
+        if (name.isNotEmpty())
+        {
+            audioProcessor.deletePreset (name);
+            refreshPresetList();
+        }
+    };
+    addAndMakeVisible (deletePresetButton);
+
+    refreshPresetList();
+
     loadButton.onClick = [this] { openFileChooser(); };
     addAndMakeVisible (loadButton);
 
@@ -208,18 +232,49 @@ ZenithGranularAudioProcessorEditor::ZenithGranularAudioProcessorEditor (ZenithGr
     statusLabel.setJustificationType (juce::Justification::centred);
     addAndMakeVisible (statusLabel);
 
+    titleLabel.setText ("ZenithGranular - v0.6 (fase 6)", juce::dontSendNotification);
     tabs.addTab ("Sampler",  juce::Colour (0xff12141a), &samplerPanel,  false);
     tabs.addTab ("Granular", juce::Colour (0xff12141a), &granularPanel, false);
     tabs.addTab ("FX",       juce::Colour (0xff12141a), &fxPanel,       false);
     tabs.addTab ("Macros",   juce::Colour (0xff12141a), &macroPanel,    false);
     addAndMakeVisible (tabs);
 
-    titleLabel.setText ("ZenithGranular - v0.5 (fase 5)", juce::dontSendNotification);
-
-    setSize (480, 400);
+    setSize (480, 430);
 }
 
 ZenithGranularAudioProcessorEditor::~ZenithGranularAudioProcessorEditor() = default;
+
+void ZenithGranularAudioProcessorEditor::refreshPresetList()
+{
+    presetBox.clear();
+    int id = 1;
+    for (auto& name : audioProcessor.getAllPresets())
+        presetBox.addItem (name, id++);
+}
+
+void ZenithGranularAudioProcessorEditor::promptSavePreset()
+{
+    presetNameWindow = std::make_unique<juce::AlertWindow> ("Guardar preset", "Nome do preset:",
+                                                              juce::AlertWindow::NoIcon);
+    presetNameWindow->addTextEditor ("name", "Novo Preset");
+    presetNameWindow->addButton ("Guardar", 1);
+    presetNameWindow->addButton ("Cancelar", 0);
+
+    presetNameWindow->enterModalState (true, juce::ModalCallbackFunction::create ([this] (int result)
+    {
+        if (result == 1 && presetNameWindow != nullptr)
+        {
+            const auto name = presetNameWindow->getTextEditorContents ("name");
+            if (name.isNotEmpty())
+            {
+                audioProcessor.savePreset (name);
+                refreshPresetList();
+                presetBox.setText (name, juce::dontSendNotification);
+            }
+        }
+        presetNameWindow.reset();
+    }), true);
+}
 
 void ZenithGranularAudioProcessorEditor::loadFile (const juce::File& file)
 {
@@ -290,7 +345,16 @@ void ZenithGranularAudioProcessorEditor::resized()
     auto area = getLocalBounds().reduced (10);
 
     titleLabel.setBounds (area.removeFromTop (24));
-    loadButton.setBounds (area.removeFromTop (30).reduced (60, 0));
+
+    auto presetRow = area.removeFromTop (26);
+    deletePresetButton.setBounds (presetRow.removeFromRight (60));
+    presetRow.removeFromRight (4);
+    savePresetButton.setBounds (presetRow.removeFromRight (60));
+    presetRow.removeFromRight (4);
+    presetBox.setBounds (presetRow);
+
+    area.removeFromTop (4);
+    loadButton.setBounds (area.removeFromTop (28).reduced (60, 0));
     statusLabel.setBounds (area.removeFromTop (20));
 
     area.removeFromTop (8);
