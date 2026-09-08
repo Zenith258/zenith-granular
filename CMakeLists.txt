@@ -33,7 +33,11 @@ target_sources(ZenithGranular
     PRIVATE
         PluginProcessor.cpp
         PluginEditor.cpp
-        SamplerEngine.cpp)
+        SamplerEngine.cpp
+        FilterEngine.cpp
+        SaturationEngine.cpp
+        DelayEngine.cpp
+        ReverbEngine.cpp)
 
 target_compile_definitions(ZenithGranular
     PUBLIC
@@ -45,6 +49,7 @@ target_compile_definitions(ZenithGranular
 target_link_libraries(ZenithGranular
     PRIVATE
         juce::juce_audio_utils
+        juce::juce_dsp
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags

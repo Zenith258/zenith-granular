@@ -24,6 +24,30 @@ ZenithGranularAudioProcessor::ZenithGranularAudioProcessor()
         apvts.getRawParameterValue ("grainPan"),
         apvts.getRawParameterValue ("granularMix")
     });
+
+    filterEngine.connectParameters ({
+        apvts.getRawParameterValue ("filterType"),
+        apvts.getRawParameterValue ("filterCutoff"),
+        apvts.getRawParameterValue ("filterResonance")
+    });
+
+    saturationEngine.connectParameters ({
+        apvts.getRawParameterValue ("satMode"),
+        apvts.getRawParameterValue ("satDrive"),
+        apvts.getRawParameterValue ("satMix")
+    });
+
+    delayEngine.connectParameters ({
+        apvts.getRawParameterValue ("delayTime"),
+        apvts.getRawParameterValue ("delayFeedback"),
+        apvts.getRawParameterValue ("delayMix")
+    });
+
+    reverbEngine.connectParameters ({
+        apvts.getRawParameterValue ("reverbSize"),
+        apvts.getRawParameterValue ("reverbDamping"),
+        apvts.getRawParameterValue ("reverbMix")
+    });
 }
 
 ZenithGranularAudioProcessor::~ZenithGranularAudioProcessor() = default;
@@ -88,12 +112,73 @@ juce::AudioProcessorValueTreeState::ParameterLayout ZenithGranularAudioProcessor
         juce::ParameterID { "granularMix", 1 }, "Granular Mix",
         juce::NormalisableRange<float> (0.0f, 100.0f, 0.1f), 0.0f, "%"));
 
+    // --- Filtro ---
+    params.push_back (std::make_unique<juce::AudioParameterChoice> (
+        juce::ParameterID { "filterType", 1 }, "Filter Type",
+        juce::StringArray { "Low-Pass", "High-Pass", "Band-Pass" }, 0));
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "filterCutoff", 1 }, "Filter Cutoff",
+        juce::NormalisableRange<float> (20.0f, 20000.0f, 1.0f, 0.3f), 20000.0f, "Hz"));
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "filterResonance", 1 }, "Filter Resonance",
+        juce::NormalisableRange<float> (0.0f, 100.0f, 0.1f), 0.0f, "%"));
+
+    // --- Saturação ---
+    params.push_back (std::make_unique<juce::AudioParameterChoice> (
+        juce::ParameterID { "satMode", 1 }, "Saturation Mode",
+        juce::StringArray { "Soft Clip", "Tape", "Tube" }, 0));
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "satDrive", 1 }, "Saturation Drive",
+        juce::NormalisableRange<float> (0.0f, 100.0f, 0.1f), 0.0f, "%"));
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "satMix", 1 }, "Saturation Mix",
+        juce::NormalisableRange<float> (0.0f, 100.0f, 0.1f), 0.0f, "%"));
+
+    // --- Delay ---
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "delayTime", 1 }, "Delay Time",
+        juce::NormalisableRange<float> (1.0f, 2000.0f, 1.0f), 300.0f, "ms"));
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "delayFeedback", 1 }, "Delay Feedback",
+        juce::NormalisableRange<float> (0.0f, 95.0f, 0.1f), 30.0f, "%"));
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "delayMix", 1 }, "Delay Mix",
+        juce::NormalisableRange<float> (0.0f, 100.0f, 0.1f), 0.0f, "%"));
+
+    // --- Reverb ---
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "reverbSize", 1 }, "Reverb Size",
+        juce::NormalisableRange<float> (0.0f, 100.0f, 0.1f), 50.0f, "%"));
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "reverbDamping", 1 }, "Reverb Damping",
+        juce::NormalisableRange<float> (0.0f, 100.0f, 0.1f), 50.0f, "%"));
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "reverbMix", 1 }, "Reverb Mix",
+        juce::NormalisableRange<float> (0.0f, 100.0f, 0.1f), 0.0f, "%"));
+
     return { params.begin(), params.end() };
 }
 
 void ZenithGranularAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     samplerEngine.prepare (sampleRate, samplesPerBlock);
+
+    juce::dsp::ProcessSpec spec;
+    spec.sampleRate = sampleRate;
+    spec.maximumBlockSize = (juce::uint32) samplesPerBlock;
+    spec.numChannels = (juce::uint32) getTotalNumOutputChannels();
+
+    filterEngine.prepare (spec);
+    delayEngine.prepare (spec);
+    reverbEngine.prepare (spec);
 }
 
 void ZenithGranularAudioProcessor::releaseResources()
@@ -115,6 +200,11 @@ void ZenithGranularAudioProcessor::processBlock (juce::AudioBuffer<float>& buffe
 
     buffer.clear();
     samplerEngine.renderNextBlock (buffer, midiMessages, 0, buffer.getNumSamples());
+
+    filterEngine.process (buffer);
+    saturationEngine.process (buffer);
+    delayEngine.process (buffer);
+    reverbEngine.process (buffer);
 }
 
 juce::AudioProcessorEditor* ZenithGranularAudioProcessor::createEditor()

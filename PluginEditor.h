@@ -4,10 +4,9 @@
 #include "PluginProcessor.h"
 
 /**
-    FASE 3 — Editor com os knobs granulares e suporte a arrastar-e-largar
-    (arrasta um ficheiro de áudio para cima da janela do plugin em vez de
-    teres de clicar em "Load Sample..."). O layout visual definitivo
-    (waveform, grãos animados) entra na FASE 8.
+    FASE 4 — Editor com os controlos de FX (Filtro, Saturação, Delay, Reverb)
+    somados aos do sampler/granular. Continua a ser um layout funcional, não
+    o design final (isso é a FASE 8).
 */
 class ZenithGranularAudioProcessorEditor : public juce::AudioProcessorEditor,
                                             public juce::FileDragAndDropTarget
@@ -19,7 +18,6 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
 
-    // --- juce::FileDragAndDropTarget ---
     bool isInterestedInFileDrag (const juce::StringArray& files) override;
     void fileDragEnter (const juce::StringArray& files, int x, int y) override;
     void fileDragExit (const juce::StringArray& files) override;
@@ -46,12 +44,30 @@ private:
                 grainPitchLabel { {}, "Grain Pitch" }, grainPitchRandomLabel { {}, "Pitch Random" },
                 grainPanLabel { {}, "Pan Spread" }, granularMixLabel { {}, "Granular Mix" };
 
-    using SliderAttachment = juce::AudioProcessorValueTreeState::SliderAttachment;
+    juce::ComboBox filterTypeBox, satModeBox;
+    juce::Slider filterCutoffSlider, filterResonanceSlider, satDriveSlider, satMixSlider,
+                 delayTimeSlider, delayFeedbackSlider, delayMixSlider,
+                 reverbSizeSlider, reverbDampingSlider, reverbMixSlider;
+    juce::Label filterTypeLabel { {}, "Filter Type" }, filterCutoffLabel { {}, "Cutoff" },
+                filterResonanceLabel { {}, "Resonance" }, satModeLabel { {}, "Sat Mode" },
+                satDriveLabel { {}, "Drive" }, satMixLabel { {}, "Sat Mix" },
+                delayTimeLabel { {}, "Delay Time" }, delayFeedbackLabel { {}, "Feedback" },
+                delayMixLabel { {}, "Delay Mix" }, reverbSizeLabel { {}, "Reverb Size" },
+                reverbDampingLabel { {}, "Damping" }, reverbMixLabel { {}, "Reverb Mix" };
+
+    using SliderAttachment   = juce::AudioProcessorValueTreeState::SliderAttachment;
+    using ComboBoxAttachment = juce::AudioProcessorValueTreeState::ComboBoxAttachment;
+
     std::unique_ptr<SliderAttachment> attackAttachment, decayAttachment, sustainAttachment,
                                        releaseAttachment, pitchAttachment, fineTuneAttachment,
                                        grainSizeAttachment, grainDensityAttachment, grainPositionAttachment,
                                        grainPositionRandomAttachment, grainPitchAttachment,
-                                       grainPitchRandomAttachment, grainPanAttachment, granularMixAttachment;
+                                       grainPitchRandomAttachment, grainPanAttachment, granularMixAttachment,
+                                       filterCutoffAttachment, filterResonanceAttachment,
+                                       satDriveAttachment, satMixAttachment,
+                                       delayTimeAttachment, delayFeedbackAttachment, delayMixAttachment,
+                                       reverbSizeAttachment, reverbDampingAttachment, reverbMixAttachment;
+    std::unique_ptr<ComboBoxAttachment> filterTypeAttachment, satModeAttachment;
 
     std::unique_ptr<juce::FileChooser> fileChooser;
     bool isDraggingFileOver = false;

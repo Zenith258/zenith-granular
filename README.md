@@ -1,21 +1,25 @@
-# Zenith Granular — Fase 3 (GranularEngine)
+# Zenith Granular — Fase 4 (FX: Filtro, Saturação, Delay, Reverb)
 
-Este é o esqueleto compilável do plugin, agora com granulação real:
-o `SamplerEngine` mistura leitura normal do sample com uma nuvem de grãos.
+Cadeia de efeitos completa, cada um no seu próprio ficheiro (FilterEngine,
+SaturationEngine, DelayEngine, ReverbEngine), aplicada depois do
+sampler/granular, antes da saída — mesmo princípio de organização usado por
+romplers profissionais (voz isolada → FX partilhado no fim).
 
 ## O que este código faz
 - Regista o plugin como **instrumento** (Channel Rack do FL Studio).
-- Botão **"Load Sample..."** ou **arrastar e largar** um ficheiro de áudio
-  direto na janela do plugin.
+- Botão **"Load Sample..."** ou **arrastar e largar** um ficheiro de áudio.
 - Formatos suportados: WAV, AIFF, FLAC, OGG, MP3, M4A, WMA.
-- 6 knobs do sampler: Attack, Decay, Sustain, Release, Pitch, Fine Tune.
-- 8 knobs do granulador: Grain Size, Density, Position, Position Random,
-  Grain Pitch, Pitch Random, Pan Spread, e **Granular Mix** (0% = só o
-  sampler normal, 100% = só a textura granular — os dois se misturam).
+- Sampler: Attack, Decay, Sustain, Release, Pitch, Fine Tune.
+- Granulador: Grain Size, Density, Position, Position Random, Grain Pitch,
+  Pitch Random, Pan Spread, Granular Mix.
+- Filtro: Low-Pass/High-Pass/Band-Pass, Cutoff, Resonance.
+- Saturação: Soft Clip/Tape/Tube, Drive, Mix.
+- Delay: Time (ms), Feedback, Mix. (sync ao BPM fica para depois)
+- Reverb: Size, Damping, Mix.
 - O sample carregado é lembrado entre sessões do projeto `.flp`.
 
-## Próximo passo (Fase 4)
-Implementar o `TextureEngine`/FX: filtro, saturação, delay e reverb.
+## Próximo passo (Fase 5/6)
+Modulação (LFOs, envelope de modulação, macros) e sistema de presets.
 
 ## Como compilar (Windows, gratuito)
 1. Instala o [CMake](https://cmake.org/download/) e o

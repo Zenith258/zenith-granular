@@ -2,6 +2,10 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "SamplerEngine.h"
+#include "FilterEngine.h"
+#include "SaturationEngine.h"
+#include "DelayEngine.h"
+#include "ReverbEngine.h"
 
 /**
     FASE 2 — SamplerEngine ligado. O plugin agora carrega um .wav (via botão
@@ -52,6 +56,10 @@ private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
     SamplerEngine samplerEngine;
+    FilterEngine filterEngine;
+    SaturationEngine saturationEngine;
+    DelayEngine delayEngine;
+    ReverbEngine reverbEngine;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ZenithGranularAudioProcessor)
 };
