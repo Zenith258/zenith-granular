@@ -19,5 +19,7 @@ public:
     void deletePreset (const juce::String& name);
 
 private:
+    void ensureFactoryPresets();
+
     juce::AudioProcessorValueTreeState& state;
 };

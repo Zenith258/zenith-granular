@@ -22,6 +22,12 @@ FL Studio, não só no que foi guardado.
 - O sample carregado é lembrado entre sessões do projeto `.flp` e dentro
   dos presets.
 
+## Presets de fábrica
+6 presets vêm prontos na primeira vez que abres o plugin (não precisam de
+sample próprio — aplicam-se a qualquer som que carregares):
+**Piano Clean**, **Bass Deep**, **808 Punch**, **Keys Warm**,
+**Pad Atmospheric**, **Lo-Fi Dust**.
+
 ## Próximo passo (Fase 6b)
 Biblioteca nativa de samples (packs próprios embutidos no plugin).
 
