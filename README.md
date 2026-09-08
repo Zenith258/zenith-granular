@@ -1,30 +1,24 @@
-# Zenith Granular — Fase 4 (FX: Filtro, Saturação, Delay, Reverb)
+# Zenith Granular — Fase 5 (Macros)
 
-Cadeia de efeitos completa, cada um no seu próprio ficheiro (FilterEngine,
-SaturationEngine, DelayEngine, ReverbEngine), aplicada depois do
-sampler/granular, antes da saída — mesmo princípio de organização usado por
-romplers profissionais (voz isolada → FX partilhado no fim).
+4 macros (Space, Texture, Movement, Chaos) numa 4ª aba — cada um move vários
+parâmetros de destino ao mesmo tempo, sem precisar de mexer no DSP.
 
 ## O que este código faz
 - Regista o plugin como **instrumento** (Channel Rack do FL Studio).
 - Botão **"Load Sample..."** ou **arrastar e largar** um ficheiro de áudio.
 - Formatos suportados: WAV, AIFF, FLAC, OGG, MP3, M4A, WMA.
+- Interface em 4 abas: Sampler, Granular, FX, Macros.
 - Sampler: Attack, Decay, Sustain, Release, Pitch, Fine Tune.
 - Granulador: Grain Size, Density, Position, Position Random, Grain Pitch,
   Pitch Random, Pan Spread, Granular Mix.
-- Filtro: Low-Pass/High-Pass/Band-Pass, Cutoff, Resonance.
-- Saturação: Soft Clip/Tape/Tube, Drive, Mix.
-- Delay: Time (ms), Feedback, Mix. (sync ao BPM fica para depois)
-- Reverb: Size, Damping, Mix.
+- FX: Filtro (LP/HP/BP + Cutoff/Resonance), Saturação (Soft Clip/Tape/Tube +
+  Drive/Mix), Delay (Time/Feedback/Mix), Reverb (Size/Damping/Mix).
+- Macros: Space (Reverb+Delay Mix), Texture (Granular Mix+Density), Movement
+  (Position Random+Pan Spread), Chaos (Pitch Random+Saturation Drive/Mix).
 - O sample carregado é lembrado entre sessões do projeto `.flp`.
 
-## Interface
-Organizada em 3 abas (Sampler / Granular / FX) em vez de uma coluna única —
-a janela ficou mais pequena e mais fácil de navegar. O design visual
-definitivo (waveform, grãos animados) continua para a Fase 7.
-
-## Próximo passo (Fase 5/6)
-Modulação (LFOs, envelope de modulação, macros) e sistema de presets.
+## Próximo passo (Fase 6)
+Sistema de presets (guardar/carregar patches completos e FX racks).
 
 ## Como compilar (Windows, gratuito)
 1. Instala o [CMake](https://cmake.org/download/) e o

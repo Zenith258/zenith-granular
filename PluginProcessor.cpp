@@ -164,6 +164,23 @@ juce::AudioProcessorValueTreeState::ParameterLayout ZenithGranularAudioProcessor
         juce::ParameterID { "reverbMix", 1 }, "Reverb Mix",
         juce::NormalisableRange<float> (0.0f, 100.0f, 0.1f), 0.0f, "%"));
 
+    // --- Macros ---
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "macroSpace", 1 }, "Macro Space",
+        juce::NormalisableRange<float> (0.0f, 100.0f, 0.1f), 0.0f, "%"));
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "macroTexture", 1 }, "Macro Texture",
+        juce::NormalisableRange<float> (0.0f, 100.0f, 0.1f), 0.0f, "%"));
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "macroMovement", 1 }, "Macro Movement",
+        juce::NormalisableRange<float> (0.0f, 100.0f, 0.1f), 0.0f, "%"));
+
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "macroChaos", 1 }, "Macro Chaos",
+        juce::NormalisableRange<float> (0.0f, 100.0f, 0.1f), 0.0f, "%"));
+
     return { params.begin(), params.end() };
 }
 

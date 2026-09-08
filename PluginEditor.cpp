@@ -140,13 +140,63 @@ void ZenithGranularAudioProcessorEditor::FXPanel::resized()
         k->layout (area.removeFromLeft (w3));
 }
 
+// ---------------------------------------------------------------- MacroPanel
+
+ZenithGranularAudioProcessorEditor::MacroPanel::MacroPanel (ZenithGranularAudioProcessor& proc)
+{
+    space.setup    (*this, proc.apvts, "macroSpace",    "Space");
+    texture.setup  (*this, proc.apvts, "macroTexture",  "Texture");
+    movement.setup (*this, proc.apvts, "macroMovement", "Movement");
+    chaos.setup    (*this, proc.apvts, "macroChaos",    "Chaos");
+
+    // Ponteiro (não referência) para o apvts, para ser seguro de capturar nas
+    // lambdas — o processor vive muito mais tempo que este construtor.
+    auto* state = &proc.apvts;
+
+    space.slider.onValueChange = [state, this]
+    {
+        const auto v = (float) space.slider.getValue();
+        state->getParameterAsValue ("reverbMix").setValue (v * 0.7f);
+        state->getParameterAsValue ("delayMix").setValue (v * 0.5f);
+    };
+
+    texture.slider.onValueChange = [state, this]
+    {
+        const auto v = (float) texture.slider.getValue();
+        state->getParameterAsValue ("granularMix").setValue (v);
+        state->getParameterAsValue ("grainDensity").setValue (juce::jlimit (1.0f, 100.0f, 20.0f + v * 0.6f));
+    };
+
+    movement.slider.onValueChange = [state, this]
+    {
+        const auto v = (float) movement.slider.getValue();
+        state->getParameterAsValue ("grainPositionRandom").setValue (v * 0.8f);
+        state->getParameterAsValue ("grainPan").setValue (juce::jlimit (0.0f, 100.0f, 50.0f + v * 0.5f));
+    };
+
+    chaos.slider.onValueChange = [state, this]
+    {
+        const auto v = (float) chaos.slider.getValue();
+        state->getParameterAsValue ("grainPitchRandom").setValue (v);
+        state->getParameterAsValue ("satDrive").setValue (v * 0.8f);
+        state->getParameterAsValue ("satMix").setValue (v * 0.6f);
+    };
+}
+
+void ZenithGranularAudioProcessorEditor::MacroPanel::resized()
+{
+    auto area = getLocalBounds().reduced (10);
+    const int w = area.getWidth() / 4;
+    for (auto* k : { &space, &texture, &movement, &chaos })
+        k->layout (area.removeFromLeft (w));
+}
+
 // ---------------------------------------------------------------- Editor
 
 ZenithGranularAudioProcessorEditor::ZenithGranularAudioProcessorEditor (ZenithGranularAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p),
-      samplerPanel (p), granularPanel (p), fxPanel (p)
+      samplerPanel (p), granularPanel (p), fxPanel (p), macroPanel (p)
 {
-    titleLabel.setText ("ZenithGranular - v0.4 (fase 4)", juce::dontSendNotification);
     titleLabel.setJustificationType (juce::Justification::centred);
     addAndMakeVisible (titleLabel);
 
@@ -161,7 +211,10 @@ ZenithGranularAudioProcessorEditor::ZenithGranularAudioProcessorEditor (ZenithGr
     tabs.addTab ("Sampler",  juce::Colour (0xff12141a), &samplerPanel,  false);
     tabs.addTab ("Granular", juce::Colour (0xff12141a), &granularPanel, false);
     tabs.addTab ("FX",       juce::Colour (0xff12141a), &fxPanel,       false);
+    tabs.addTab ("Macros",   juce::Colour (0xff12141a), &macroPanel,    false);
     addAndMakeVisible (tabs);
+
+    titleLabel.setText ("ZenithGranular - v0.5 (fase 5)", juce::dontSendNotification);
 
     setSize (480, 400);
 }

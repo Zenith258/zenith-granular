@@ -67,6 +67,13 @@ private:
              delayTime, delayFeedback, delayMix, reverbSize, reverbDamping, reverbMix;
     };
 
+    struct MacroPanel : public juce::Component
+    {
+        explicit MacroPanel (ZenithGranularAudioProcessor& proc);
+        void resized() override;
+        Knob space, texture, movement, chaos;
+    };
+
     void openFileChooser();
     void loadFile (const juce::File& file);
 
@@ -80,6 +87,7 @@ private:
     SamplerPanel samplerPanel;
     GranularPanel granularPanel;
     FXPanel fxPanel;
+    MacroPanel macroPanel;
 
     std::unique_ptr<juce::FileChooser> fileChooser;
     bool isDraggingFileOver = false;
