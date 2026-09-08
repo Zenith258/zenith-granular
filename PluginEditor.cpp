@@ -3,12 +3,6 @@
 
 namespace
 {
-    void setupRotary (juce::Slider& slider)
-    {
-        slider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
-        slider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 64, 18);
-    }
-
     bool isSupportedAudioFile (const juce::String& path)
     {
         static const juce::StringArray extensions { ".wav", ".aiff", ".aif", ".flac",
@@ -21,8 +15,136 @@ namespace
     }
 }
 
+// ---------------------------------------------------------------- Knob
+
+void ZenithGranularAudioProcessorEditor::Knob::setup (juce::Component& parent,
+                                                        juce::AudioProcessorValueTreeState& state,
+                                                        const juce::String& paramID,
+                                                        const juce::String& labelText)
+{
+    slider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+    slider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 64, 18);
+    label.setText (labelText, juce::dontSendNotification);
+    label.setJustificationType (juce::Justification::centred);
+
+    parent.addAndMakeVisible (slider);
+    parent.addAndMakeVisible (label);
+
+    attachment = std::make_unique<SliderAttachment> (state, paramID, slider);
+}
+
+void ZenithGranularAudioProcessorEditor::Knob::layout (juce::Rectangle<int> bounds)
+{
+    label.setBounds (bounds.removeFromBottom (18));
+    slider.setBounds (bounds.reduced (4, 0));
+}
+
+// ---------------------------------------------------------------- SamplerPanel
+
+ZenithGranularAudioProcessorEditor::SamplerPanel::SamplerPanel (ZenithGranularAudioProcessor& proc)
+{
+    attack.setup   (*this, proc.apvts, "samplerAttack",   "Attack");
+    decay.setup    (*this, proc.apvts, "samplerDecay",    "Decay");
+    sustain.setup  (*this, proc.apvts, "samplerSustain",  "Sustain");
+    release.setup  (*this, proc.apvts, "samplerRelease",  "Release");
+    pitch.setup    (*this, proc.apvts, "samplerPitch",    "Pitch");
+    fineTune.setup (*this, proc.apvts, "samplerFineTune", "Fine Tune");
+}
+
+void ZenithGranularAudioProcessorEditor::SamplerPanel::resized()
+{
+    auto area = getLocalBounds().reduced (10);
+    const int w = area.getWidth() / 6;
+    for (auto* k : { &attack, &decay, &sustain, &release, &pitch, &fineTune })
+        k->layout (area.removeFromLeft (w));
+}
+
+// ---------------------------------------------------------------- GranularPanel
+
+ZenithGranularAudioProcessorEditor::GranularPanel::GranularPanel (ZenithGranularAudioProcessor& proc)
+{
+    grainSize.setup           (*this, proc.apvts, "grainSize",           "Grain Size");
+    grainDensity.setup        (*this, proc.apvts, "grainDensity",        "Density");
+    grainPosition.setup       (*this, proc.apvts, "grainPosition",       "Position");
+    grainPositionRandom.setup (*this, proc.apvts, "grainPositionRandom", "Pos. Random");
+    grainPitch.setup          (*this, proc.apvts, "grainPitch",          "Grain Pitch");
+    grainPitchRandom.setup    (*this, proc.apvts, "grainPitchRandom",    "Pitch Random");
+    grainPan.setup            (*this, proc.apvts, "grainPan",            "Pan Spread");
+    granularMix.setup         (*this, proc.apvts, "granularMix",         "Granular Mix");
+}
+
+void ZenithGranularAudioProcessorEditor::GranularPanel::resized()
+{
+    auto area = getLocalBounds().reduced (10);
+    auto topRow = area.removeFromTop (area.getHeight() / 2);
+    const int w = topRow.getWidth() / 4;
+    for (auto* k : { &grainSize, &grainDensity, &grainPosition, &grainPositionRandom })
+        k->layout (topRow.removeFromLeft (w));
+    for (auto* k : { &grainPitch, &grainPitchRandom, &grainPan, &granularMix })
+        k->layout (area.removeFromLeft (w));
+}
+
+// ---------------------------------------------------------------- FXPanel
+
+ZenithGranularAudioProcessorEditor::FXPanel::FXPanel (ZenithGranularAudioProcessor& proc)
+{
+    filterTypeBox.addItemList ({ "Low-Pass", "High-Pass", "Band-Pass" }, 1);
+    satModeBox.addItemList ({ "Soft Clip", "Tape", "Tube" }, 1);
+    filterTypeLabel.setJustificationType (juce::Justification::centred);
+    satModeLabel.setJustificationType (juce::Justification::centred);
+    addAndMakeVisible (filterTypeBox);
+    addAndMakeVisible (satModeBox);
+    addAndMakeVisible (filterTypeLabel);
+    addAndMakeVisible (satModeLabel);
+    filterTypeAttachment = std::make_unique<ComboBoxAttachment> (proc.apvts, "filterType", filterTypeBox);
+    satModeAttachment    = std::make_unique<ComboBoxAttachment> (proc.apvts, "satMode", satModeBox);
+
+    filterCutoff.setup    (*this, proc.apvts, "filterCutoff",    "Cutoff");
+    filterResonance.setup (*this, proc.apvts, "filterResonance", "Resonance");
+    satDrive.setup        (*this, proc.apvts, "satDrive",        "Drive");
+    satMix.setup          (*this, proc.apvts, "satMix",          "Sat Mix");
+    delayTime.setup       (*this, proc.apvts, "delayTime",       "Delay Time");
+    delayFeedback.setup   (*this, proc.apvts, "delayFeedback",   "Feedback");
+    delayMix.setup        (*this, proc.apvts, "delayMix",        "Delay Mix");
+    reverbSize.setup      (*this, proc.apvts, "reverbSize",      "Reverb Size");
+    reverbDamping.setup   (*this, proc.apvts, "reverbDamping",   "Damping");
+    reverbMix.setup       (*this, proc.apvts, "reverbMix",       "Reverb Mix");
+}
+
+void ZenithGranularAudioProcessorEditor::FXPanel::resized()
+{
+    auto area = getLocalBounds().reduced (10);
+
+    auto row1 = area.removeFromTop (area.getHeight() / 3);
+    const int w1 = row1.getWidth() / 4;
+    {
+        auto col = row1.removeFromLeft (w1);
+        filterTypeLabel.setBounds (col.removeFromBottom (18));
+        filterTypeBox.setBounds (col.reduced (4, 20));
+    }
+    filterCutoff.layout (row1.removeFromLeft (w1));
+    filterResonance.layout (row1.removeFromLeft (w1));
+    {
+        auto col = row1.removeFromLeft (w1);
+        satModeLabel.setBounds (col.removeFromBottom (18));
+        satModeBox.setBounds (col.reduced (4, 20));
+    }
+
+    auto row2 = area.removeFromTop (area.getHeight() / 2);
+    const int w2 = row2.getWidth() / 4;
+    for (auto* k : { &satDrive, &satMix, &delayTime, &delayFeedback })
+        k->layout (row2.removeFromLeft (w2));
+
+    const int w3 = area.getWidth() / 4;
+    for (auto* k : { &delayMix, &reverbSize, &reverbDamping, &reverbMix })
+        k->layout (area.removeFromLeft (w3));
+}
+
+// ---------------------------------------------------------------- Editor
+
 ZenithGranularAudioProcessorEditor::ZenithGranularAudioProcessorEditor (ZenithGranularAudioProcessor& p)
-    : AudioProcessorEditor (&p), audioProcessor (p)
+    : AudioProcessorEditor (&p), audioProcessor (p),
+      samplerPanel (p), granularPanel (p), fxPanel (p)
 {
     titleLabel.setText ("ZenithGranular - v0.4 (fase 4)", juce::dontSendNotification);
     titleLabel.setJustificationType (juce::Justification::centred);
@@ -36,87 +158,12 @@ ZenithGranularAudioProcessorEditor::ZenithGranularAudioProcessorEditor (ZenithGr
     statusLabel.setJustificationType (juce::Justification::centred);
     addAndMakeVisible (statusLabel);
 
-    for (auto* s : { &attackSlider, &decaySlider, &sustainSlider, &releaseSlider, &pitchSlider, &fineTuneSlider,
-                      &grainSizeSlider, &grainDensitySlider, &grainPositionSlider, &grainPositionRandomSlider,
-                      &grainPitchSlider, &grainPitchRandomSlider, &grainPanSlider, &granularMixSlider,
-                      &filterCutoffSlider, &filterResonanceSlider, &satDriveSlider, &satMixSlider,
-                      &delayTimeSlider, &delayFeedbackSlider, &delayMixSlider,
-                      &reverbSizeSlider, &reverbDampingSlider, &reverbMixSlider })
-        setupRotary (*s);
+    tabs.addTab ("Sampler",  juce::Colour (0xff12141a), &samplerPanel,  false);
+    tabs.addTab ("Granular", juce::Colour (0xff12141a), &granularPanel, false);
+    tabs.addTab ("FX",       juce::Colour (0xff12141a), &fxPanel,       false);
+    addAndMakeVisible (tabs);
 
-    for (auto* l : { &attackLabel, &decayLabel, &sustainLabel, &releaseLabel, &pitchLabel, &fineTuneLabel,
-                      &grainSizeLabel, &grainDensityLabel, &grainPositionLabel, &grainPositionRandomLabel,
-                      &grainPitchLabel, &grainPitchRandomLabel, &grainPanLabel, &granularMixLabel,
-                      &filterTypeLabel, &filterCutoffLabel, &filterResonanceLabel, &satModeLabel,
-                      &satDriveLabel, &satMixLabel, &delayTimeLabel, &delayFeedbackLabel, &delayMixLabel,
-                      &reverbSizeLabel, &reverbDampingLabel, &reverbMixLabel })
-        l->setJustificationType (juce::Justification::centred);
-
-    filterTypeBox.addItemList ({ "Low-Pass", "High-Pass", "Band-Pass" }, 1);
-    satModeBox.addItemList ({ "Soft Clip", "Tape", "Tube" }, 1);
-
-    for (auto* c : { (juce::Component*) &attackSlider, (juce::Component*) &decaySlider,
-                      (juce::Component*) &sustainSlider, (juce::Component*) &releaseSlider,
-                      (juce::Component*) &pitchSlider, (juce::Component*) &fineTuneSlider,
-                      (juce::Component*) &attackLabel, (juce::Component*) &decayLabel,
-                      (juce::Component*) &sustainLabel, (juce::Component*) &releaseLabel,
-                      (juce::Component*) &pitchLabel, (juce::Component*) &fineTuneLabel,
-                      (juce::Component*) &grainSizeSlider, (juce::Component*) &grainDensitySlider,
-                      (juce::Component*) &grainPositionSlider, (juce::Component*) &grainPositionRandomSlider,
-                      (juce::Component*) &grainPitchSlider, (juce::Component*) &grainPitchRandomSlider,
-                      (juce::Component*) &grainPanSlider, (juce::Component*) &granularMixSlider,
-                      (juce::Component*) &grainSizeLabel, (juce::Component*) &grainDensityLabel,
-                      (juce::Component*) &grainPositionLabel, (juce::Component*) &grainPositionRandomLabel,
-                      (juce::Component*) &grainPitchLabel, (juce::Component*) &grainPitchRandomLabel,
-                      (juce::Component*) &grainPanLabel, (juce::Component*) &granularMixLabel,
-                      (juce::Component*) &filterTypeBox, (juce::Component*) &filterCutoffSlider,
-                      (juce::Component*) &filterResonanceSlider, (juce::Component*) &satModeBox,
-                      (juce::Component*) &satDriveSlider, (juce::Component*) &satMixSlider,
-                      (juce::Component*) &delayTimeSlider, (juce::Component*) &delayFeedbackSlider,
-                      (juce::Component*) &delayMixSlider, (juce::Component*) &reverbSizeSlider,
-                      (juce::Component*) &reverbDampingSlider, (juce::Component*) &reverbMixSlider,
-                      (juce::Component*) &filterTypeLabel, (juce::Component*) &filterCutoffLabel,
-                      (juce::Component*) &filterResonanceLabel, (juce::Component*) &satModeLabel,
-                      (juce::Component*) &satDriveLabel, (juce::Component*) &satMixLabel,
-                      (juce::Component*) &delayTimeLabel, (juce::Component*) &delayFeedbackLabel,
-                      (juce::Component*) &delayMixLabel, (juce::Component*) &reverbSizeLabel,
-                      (juce::Component*) &reverbDampingLabel, (juce::Component*) &reverbMixLabel })
-        addAndMakeVisible (c);
-
-    auto& state = audioProcessor.apvts;
-    attackAttachment    = std::make_unique<SliderAttachment> (state, "samplerAttack",    attackSlider);
-    decayAttachment     = std::make_unique<SliderAttachment> (state, "samplerDecay",     decaySlider);
-    sustainAttachment   = std::make_unique<SliderAttachment> (state, "samplerSustain",   sustainSlider);
-    releaseAttachment   = std::make_unique<SliderAttachment> (state, "samplerRelease",   releaseSlider);
-    pitchAttachment     = std::make_unique<SliderAttachment> (state, "samplerPitch",     pitchSlider);
-    fineTuneAttachment  = std::make_unique<SliderAttachment> (state, "samplerFineTune",  fineTuneSlider);
-
-    grainSizeAttachment           = std::make_unique<SliderAttachment> (state, "grainSize",            grainSizeSlider);
-    grainDensityAttachment        = std::make_unique<SliderAttachment> (state, "grainDensity",         grainDensitySlider);
-    grainPositionAttachment       = std::make_unique<SliderAttachment> (state, "grainPosition",         grainPositionSlider);
-    grainPositionRandomAttachment = std::make_unique<SliderAttachment> (state, "grainPositionRandom",   grainPositionRandomSlider);
-    grainPitchAttachment          = std::make_unique<SliderAttachment> (state, "grainPitch",            grainPitchSlider);
-    grainPitchRandomAttachment    = std::make_unique<SliderAttachment> (state, "grainPitchRandom",      grainPitchRandomSlider);
-    grainPanAttachment            = std::make_unique<SliderAttachment> (state, "grainPan",              grainPanSlider);
-    granularMixAttachment         = std::make_unique<SliderAttachment> (state, "granularMix",           granularMixSlider);
-
-    filterTypeAttachment      = std::make_unique<ComboBoxAttachment> (state, "filterType", filterTypeBox);
-    filterCutoffAttachment    = std::make_unique<SliderAttachment>   (state, "filterCutoff", filterCutoffSlider);
-    filterResonanceAttachment = std::make_unique<SliderAttachment>   (state, "filterResonance", filterResonanceSlider);
-
-    satModeAttachment  = std::make_unique<ComboBoxAttachment> (state, "satMode", satModeBox);
-    satDriveAttachment = std::make_unique<SliderAttachment>   (state, "satDrive", satDriveSlider);
-    satMixAttachment   = std::make_unique<SliderAttachment>   (state, "satMix", satMixSlider);
-
-    delayTimeAttachment     = std::make_unique<SliderAttachment> (state, "delayTime", delayTimeSlider);
-    delayFeedbackAttachment = std::make_unique<SliderAttachment> (state, "delayFeedback", delayFeedbackSlider);
-    delayMixAttachment      = std::make_unique<SliderAttachment> (state, "delayMix", delayMixSlider);
-
-    reverbSizeAttachment    = std::make_unique<SliderAttachment> (state, "reverbSize", reverbSizeSlider);
-    reverbDampingAttachment = std::make_unique<SliderAttachment> (state, "reverbDamping", reverbDampingSlider);
-    reverbMixAttachment     = std::make_unique<SliderAttachment> (state, "reverbMix", reverbMixSlider);
-
-    setSize (640, 680);
+    setSize (480, 400);
 }
 
 ZenithGranularAudioProcessorEditor::~ZenithGranularAudioProcessorEditor() = default;
@@ -194,49 +241,5 @@ void ZenithGranularAudioProcessorEditor::resized()
     statusLabel.setBounds (area.removeFromTop (20));
 
     area.removeFromTop (8);
-
-    auto layoutRow = [] (juce::Rectangle<int> row, std::initializer_list<std::pair<juce::Component*, juce::Label*>> items)
-    {
-        const int w = row.getWidth() / (int) items.size();
-        for (auto& pair : items)
-        {
-            auto column = row.removeFromLeft (w);
-            pair.second->setBounds (column.removeFromBottom (18));
-            pair.first->setBounds (column.reduced (4, 0));
-        }
-    };
-
-    layoutRow (area.removeFromTop (90),
-        { { &attackSlider, &attackLabel }, { &decaySlider, &decayLabel }, { &sustainSlider, &sustainLabel },
-          { &releaseSlider, &releaseLabel }, { &pitchSlider, &pitchLabel }, { &fineTuneSlider, &fineTuneLabel } });
-
-    area.removeFromTop (8);
-
-    layoutRow (area.removeFromTop (90),
-        { { &grainSizeSlider, &grainSizeLabel }, { &grainDensitySlider, &grainDensityLabel },
-          { &grainPositionSlider, &grainPositionLabel }, { &grainPositionRandomSlider, &grainPositionRandomLabel } });
-
-    area.removeFromTop (8);
-
-    layoutRow (area.removeFromTop (90),
-        { { &grainPitchSlider, &grainPitchLabel }, { &grainPitchRandomSlider, &grainPitchRandomLabel },
-          { &grainPanSlider, &grainPanLabel }, { &granularMixSlider, &granularMixLabel } });
-
-    area.removeFromTop (8);
-
-    layoutRow (area.removeFromTop (90),
-        { { &filterTypeBox, &filterTypeLabel }, { &filterCutoffSlider, &filterCutoffLabel },
-          { &filterResonanceSlider, &filterResonanceLabel }, { &satModeBox, &satModeLabel } });
-
-    area.removeFromTop (8);
-
-    layoutRow (area.removeFromTop (90),
-        { { &satDriveSlider, &satDriveLabel }, { &satMixSlider, &satMixLabel },
-          { &delayTimeSlider, &delayTimeLabel }, { &delayFeedbackSlider, &delayFeedbackLabel } });
-
-    area.removeFromTop (8);
-
-    layoutRow (area.removeFromTop (90),
-        { { &delayMixSlider, &delayMixLabel }, { &reverbSizeSlider, &reverbSizeLabel },
-          { &reverbDampingSlider, &reverbDampingLabel }, { &reverbMixSlider, &reverbMixLabel } });
+    tabs.setBounds (area);
 }

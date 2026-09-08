@@ -18,6 +18,11 @@ romplers profissionais (voz isolada → FX partilhado no fim).
 - Reverb: Size, Damping, Mix.
 - O sample carregado é lembrado entre sessões do projeto `.flp`.
 
+## Interface
+Organizada em 3 abas (Sampler / Granular / FX) em vez de uma coluna única —
+a janela ficou mais pequena e mais fácil de navegar. O design visual
+definitivo (waveform, grãos animados) continua para a Fase 7.
+
 ## Próximo passo (Fase 5/6)
 Modulação (LFOs, envelope de modulação, macros) e sistema de presets.
 
