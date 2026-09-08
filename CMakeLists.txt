@@ -38,7 +38,9 @@ target_sources(ZenithGranular
         SaturationEngine.cpp
         DelayEngine.cpp
         ReverbEngine.cpp
-        PresetManager.cpp)
+        PresetManager.cpp
+        ZenithLookAndFeel.cpp
+        WaveformDisplay.cpp)
 
 target_compile_definitions(ZenithGranular
     PUBLIC

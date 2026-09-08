@@ -2,6 +2,8 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "PluginProcessor.h"
+#include "ZenithLookAndFeel.h"
+#include "WaveformDisplay.h"
 
 /**
     FASE 4b — Interface organizada em abas (Sampler / Granular / FX), em vez
@@ -80,17 +82,21 @@ private:
     void promptSavePreset();
 
     ZenithGranularAudioProcessor& audioProcessor;
+    ZenithLookAndFeel lookAndFeel;
 
     juce::Label titleLabel;
     juce::ComboBox presetBox;
+    juce::TextButton favoriteButton { juce::String::fromUTF8 ("\xE2\x98\x86") }; // estrela vazia
     juce::TextButton savePresetButton { "Save" };
     juce::TextButton deletePresetButton { "Delete" };
+    juce::ToggleButton showFavoritesOnlyToggle { "Favoritos" };
     std::unique_ptr<juce::AlertWindow> presetNameWindow;
 
     juce::TextButton loadButton { "Load Sample..." };
     juce::Label statusLabel;
 
     juce::TabbedComponent tabs { juce::TabbedButtonBar::TabsAtTop };
+    WaveformDisplay waveformDisplay;
     SamplerPanel samplerPanel;
     GranularPanel granularPanel;
     FXPanel fxPanel;

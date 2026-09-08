@@ -23,13 +23,34 @@ FL Studio, não só no que foi guardado.
   dos presets.
 
 ## Presets de fábrica
-6 presets vêm prontos na primeira vez que abres o plugin (não precisam de
-sample próprio — aplicam-se a qualquer som que carregares):
-**Piano Clean**, **Bass Deep**, **808 Punch**, **Keys Warm**,
-**Pad Atmospheric**, **Lo-Fi Dust**.
+16 presets vêm prontos na primeira vez que abres o plugin (não precisam de
+sample próprio — aplicam-se a qualquer som que carregares), em várias
+variações por categoria:
+- Piano: Clean, Bright, Soft
+- Bass: Deep, Bright, Sub
+- 808: Punch, Sub, Distorted
+- Keys: Warm, Bright, Dreamy
+- Pad: Atmospheric, Dark
+- Lo-Fi: Dust, Wobble
 
-## Próximo passo (Fase 6b)
-Biblioteca nativa de samples (packs próprios embutidos no plugin).
+## Favoritos
+Botão de estrela ao lado da lista de presets marca/desmarca o preset atual
+como favorito. O interruptor "Favoritos" filtra a lista para mostrar só
+esses.
+
+## Correção importante
+O carregamento de presets estava a mostrar o nome escolhido mas sem mexer
+nos knobs de verdade. Corrigido — agora usa o mesmo mecanismo já testado
+dos Macros.
+
+## Design visual (Fase 7 - início)
+- LookAndFeel próprio: knobs circulares com arco teal, fundo escuro, abas
+  e botões com a identidade visual do projeto.
+- Waveform real do sample carregado, no topo da janela.
+
+## Próximo passo (Fase 7b)
+Continuar o design: animação dos grãos sobre a waveform, e depois a
+biblioteca nativa de samples (Fase 6b).
 
 ## Como compilar (Windows, gratuito)
 1. Instala o [CMake](https://cmake.org/download/) e o

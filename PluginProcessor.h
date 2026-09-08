@@ -50,12 +50,17 @@ public:
     // --- API usada pela UI ---
     void loadSample (const juce::File& file);
     bool hasSampleLoaded() const { return samplerEngine.hasSampleLoaded(); }
+    juce::String getLoadedSamplePath() const { return apvts.state.getProperty ("samplePath", "").toString(); }
 
     // --- Presets (Fase 6) ---
     void savePreset (const juce::String& name) { presetManager.savePreset (name); }
     void loadPreset (const juce::String& name) { presetManager.loadPreset (name); reloadSampleFromState(); }
     void deletePreset (const juce::String& name) { presetManager.deletePreset (name); }
     juce::StringArray getAllPresets() const { return presetManager.getAllPresets(); }
+
+    void setPresetFavorite (const juce::String& name, bool fav) { presetManager.setFavorite (name, fav); }
+    bool isPresetFavorite (const juce::String& name) const { return presetManager.isFavorite (name); }
+    juce::StringArray getFavoritePresets() const { return presetManager.getFavoritePresets(); }
 
     juce::AudioProcessorValueTreeState apvts;
 

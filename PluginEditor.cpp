@@ -197,6 +197,13 @@ ZenithGranularAudioProcessorEditor::ZenithGranularAudioProcessorEditor (ZenithGr
     : AudioProcessorEditor (&p), audioProcessor (p),
       samplerPanel (p), granularPanel (p), fxPanel (p), macroPanel (p)
 {
+    setLookAndFeel (&lookAndFeel);
+
+    addAndMakeVisible (waveformDisplay);
+    const auto existingPath = audioProcessor.getLoadedSamplePath();
+    if (existingPath.isNotEmpty())
+        waveformDisplay.setSource (juce::File (existingPath));
+
     titleLabel.setJustificationType (juce::Justification::centred);
     addAndMakeVisible (titleLabel);
 
@@ -204,9 +211,30 @@ ZenithGranularAudioProcessorEditor::ZenithGranularAudioProcessorEditor (ZenithGr
     {
         const auto name = presetBox.getText();
         if (name.isNotEmpty())
+        {
             audioProcessor.loadPreset (name);
+            const auto path = audioProcessor.getLoadedSamplePath();
+            if (path.isNotEmpty())
+                waveformDisplay.setSource (juce::File (path));
+            const auto fav = audioProcessor.isPresetFavorite (name);
+            favoriteButton.setButtonText (fav ? juce::String::fromUTF8 ("\xE2\x98\x85")
+                                               : juce::String::fromUTF8 ("\xE2\x98\x86"));
+        }
     };
     addAndMakeVisible (presetBox);
+
+    favoriteButton.onClick = [this]
+    {
+        const auto name = presetBox.getText();
+        if (name.isNotEmpty())
+        {
+            const auto newFav = ! audioProcessor.isPresetFavorite (name);
+            audioProcessor.setPresetFavorite (name, newFav);
+            favoriteButton.setButtonText (newFav ? juce::String::fromUTF8 ("\xE2\x98\x85")
+                                                  : juce::String::fromUTF8 ("\xE2\x98\x86"));
+        }
+    };
+    addAndMakeVisible (favoriteButton);
 
     savePresetButton.onClick = [this] { promptSavePreset(); };
     addAndMakeVisible (savePresetButton);
@@ -222,6 +250,9 @@ ZenithGranularAudioProcessorEditor::ZenithGranularAudioProcessorEditor (ZenithGr
     };
     addAndMakeVisible (deletePresetButton);
 
+    showFavoritesOnlyToggle.onClick = [this] { refreshPresetList(); };
+    addAndMakeVisible (showFavoritesOnlyToggle);
+
     refreshPresetList();
 
     loadButton.onClick = [this] { openFileChooser(); };
@@ -232,23 +263,29 @@ ZenithGranularAudioProcessorEditor::ZenithGranularAudioProcessorEditor (ZenithGr
     statusLabel.setJustificationType (juce::Justification::centred);
     addAndMakeVisible (statusLabel);
 
-    titleLabel.setText ("ZenithGranular - v0.6 (fase 6)", juce::dontSendNotification);
+    titleLabel.setText ("ZenithGranular - v0.7 (fase 7)", juce::dontSendNotification);
     tabs.addTab ("Sampler",  juce::Colour (0xff12141a), &samplerPanel,  false);
     tabs.addTab ("Granular", juce::Colour (0xff12141a), &granularPanel, false);
     tabs.addTab ("FX",       juce::Colour (0xff12141a), &fxPanel,       false);
     tabs.addTab ("Macros",   juce::Colour (0xff12141a), &macroPanel,    false);
     addAndMakeVisible (tabs);
 
-    setSize (480, 430);
+    setSize (480, 510);
 }
 
-ZenithGranularAudioProcessorEditor::~ZenithGranularAudioProcessorEditor() = default;
+ZenithGranularAudioProcessorEditor::~ZenithGranularAudioProcessorEditor()
+{
+    setLookAndFeel (nullptr);
+}
 
 void ZenithGranularAudioProcessorEditor::refreshPresetList()
 {
     presetBox.clear();
+    const auto names = showFavoritesOnlyToggle.getToggleState()
+                          ? audioProcessor.getFavoritePresets()
+                          : audioProcessor.getAllPresets();
     int id = 1;
-    for (auto& name : audioProcessor.getAllPresets())
+    for (auto& name : names)
         presetBox.addItem (name, id++);
 }
 
@@ -280,6 +317,7 @@ void ZenithGranularAudioProcessorEditor::loadFile (const juce::File& file)
 {
     audioProcessor.loadSample (file);
     statusLabel.setText ("sample: " + file.getFileName(), juce::dontSendNotification);
+    waveformDisplay.setSource (file);
 }
 
 void ZenithGranularAudioProcessorEditor::openFileChooser()
@@ -344,19 +382,28 @@ void ZenithGranularAudioProcessorEditor::resized()
 {
     auto area = getLocalBounds().reduced (10);
 
-    titleLabel.setBounds (area.removeFromTop (24));
+    titleLabel.setBounds (area.removeFromTop (22));
 
-    auto presetRow = area.removeFromTop (26);
-    deletePresetButton.setBounds (presetRow.removeFromRight (60));
-    presetRow.removeFromRight (4);
-    savePresetButton.setBounds (presetRow.removeFromRight (60));
-    presetRow.removeFromRight (4);
-    presetBox.setBounds (presetRow);
+    auto presetRow1 = area.removeFromTop (26);
+    favoriteButton.setBounds (presetRow1.removeFromRight (28));
+    presetRow1.removeFromRight (4);
+    presetBox.setBounds (presetRow1);
 
     area.removeFromTop (4);
-    loadButton.setBounds (area.removeFromTop (28).reduced (60, 0));
-    statusLabel.setBounds (area.removeFromTop (20));
 
-    area.removeFromTop (8);
+    auto presetRow2 = area.removeFromTop (22);
+    showFavoritesOnlyToggle.setBounds (presetRow2.removeFromRight (110));
+    deletePresetButton.setBounds (presetRow2.removeFromRight (60));
+    presetRow2.removeFromRight (4);
+    savePresetButton.setBounds (presetRow2.removeFromLeft (60));
+
+    area.removeFromTop (6);
+    waveformDisplay.setBounds (area.removeFromTop (70));
+
+    area.removeFromTop (6);
+    loadButton.setBounds (area.removeFromTop (26).reduced (60, 0));
+    statusLabel.setBounds (area.removeFromTop (18));
+
+    area.removeFromTop (6);
     tabs.setBounds (area);
 }
