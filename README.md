@@ -23,50 +23,35 @@ FL Studio, não só no que foi guardado.
   dos presets.
 
 ## Presets de fábrica
-16 presets vêm prontos na primeira vez que abres o plugin (não precisam de
-sample próprio — aplicam-se a qualquer som que carregares), em várias
-variações por categoria:
-- Piano: Clean, Bright, Soft
-- Bass: Deep, Bright, Sub
-- 808: Punch, Sub, Distorted
-- Keys: Warm, Bright, Dreamy
-- Pad: Atmospheric, Dark
-- Lo-Fi: Dust, Wobble
+39 presets nativos, auto-reparáveis (se algum for apagado por engano numa
+versão antiga, volta a aparecer sozinho da próxima vez que abrires o
+plugin) e protegidos contra remoção pelo botão Delete. Categorias:
+- Piano (5): Clean, Bright, Soft, Dark, Granular
+- Bass (5): Deep, Bright, Sub, Distorted, Granular
+- 808 (5): Punch, Sub, Distorted, Clean, Wide
+- Keys (5): Warm, Bright, Dreamy, Granular, Vintage
+- Pad (4): Atmospheric, Dark, Bright, Drone
+- Lo-Fi (4): Dust, Wobble, Crushed, Ambient
+- Bell (4): Clean, Dark, Granular, Shimmer
+- Synth (4): Lead, Pad, Pluck, Bass
+- Pluck (3): Bright, Warm, Granular
 
-## Favoritos
-Botão de estrela ao lado da lista de presets marca/desmarca o preset atual
-como favorito. O interruptor "Favoritos" filtra a lista para mostrar só
-esses.
-
-## Correção importante
-O carregamento de presets estava a mostrar o nome escolhido mas sem mexer
-nos knobs de verdade. Corrigido — agora usa o mesmo mecanismo já testado
-dos Macros.
-
-## Design visual (Fase 7 - início)
-- LookAndFeel próprio: knobs circulares com arco teal, fundo escuro, abas
-  e botões com a identidade visual do projeto.
-- Waveform real do sample carregado, no topo da janela.
-
-## Presets de fábrica
-28 presets nativos, protegidos contra remoção acidental (o botão Delete
-recusa apagar presets de fábrica, só os teus). Variações por categoria:
-- Piano: Clean, Bright, Soft, Dark, Granular (5)
-- Bass: Deep, Bright, Sub, Distorted, Granular (5)
-- 808: Punch, Sub, Distorted, Clean, Wide (5)
-- Keys: Warm, Bright, Dreamy, Granular, Vintage (5)
-- Pad: Atmospheric, Dark, Bright, Drone (4)
-- Lo-Fi: Dust, Wobble, Crushed, Ambient (4)
+## Navegar por categoria
+Botão "Presets ▾" no topo abre um menu com uma categoria por cima (Piano,
+Bass, 808, etc.) e, dentro de cada uma, só os presets dessa categoria —
+como pediste, clicar em "Piano" mostra só as variações de piano.
 
 ## Classificação por estrelas (1-3) e favoritos
 Ao lado da lista de presets há 3 estrelas clicáveis (como no Zenology) para
 classificares o preset atual. O botão "Favoritos" abre um menu só com os
 presets classificados, sem esconder ou alterar a lista principal.
 
-## Correção importante
-O carregamento de presets estava a mostrar o nome escolhido mas sem mexer
-nos knobs de verdade. Corrigido - agora usa o mesmo mecanismo já testado
-dos Macros.
+## Correções importantes
+- O carregamento de presets não estava a mexer nos knobs de verdade —
+  corrigido (usa o mesmo mecanismo já testado dos Macros).
+- Presets de fábrica apagados por engano numa versão antiga agora voltam
+  a aparecer sozinhos (sistema auto-reparável, sem depender de um
+  "marcador" que impedia a reposição).
 
 ## Próximo passo (Fase 7b)
 Continuar o design: animação dos grãos sobre a waveform, e depois a

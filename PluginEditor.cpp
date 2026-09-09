@@ -207,6 +207,41 @@ ZenithGranularAudioProcessorEditor::ZenithGranularAudioProcessorEditor (ZenithGr
     titleLabel.setJustificationType (juce::Justification::centred);
     addAndMakeVisible (titleLabel);
 
+    categoryMenuButton.onClick = [this]
+    {
+        // Agrupa todos os presets pela primeira palavra do nome
+        // ("Piano Clean" -> categoria "Piano"), e mostra um menu com
+        // uma submenu por categoria — clicar em "Piano" abre a lista só
+        // dos presets de piano, sem misturar com as outras categorias.
+        std::map<juce::String, juce::StringArray> categories;
+        for (auto& n : audioProcessor.getAllPresets())
+            categories[n.upToFirstOccurrenceOf (" ", false, false)].add (n);
+
+        juce::PopupMenu menu;
+        std::vector<juce::String> flatList;
+        int itemId = 1;
+
+        for (auto& kv : categories)
+        {
+            juce::PopupMenu sub;
+            for (auto& presetName : kv.second)
+            {
+                sub.addItem (itemId, presetName);
+                flatList.push_back (presetName);
+                ++itemId;
+            }
+            menu.addSubMenu (kv.first, sub);
+        }
+
+        menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (categoryMenuButton),
+            [this, flatList] (int result)
+            {
+                if (result >= 1 && result <= (int) flatList.size())
+                    presetBox.setText (flatList[result - 1], juce::sendNotificationSync);
+            });
+    };
+    addAndMakeVisible (categoryMenuButton);
+
     presetBox.onChange = [this]
     {
         const auto name = presetBox.getText();
@@ -293,7 +328,7 @@ ZenithGranularAudioProcessorEditor::ZenithGranularAudioProcessorEditor (ZenithGr
     tabs.addTab ("Macros",   juce::Colour (0xff12141a), &macroPanel,    false);
     addAndMakeVisible (tabs);
 
-    setSize (480, 510);
+    setSize (480, 536);
 }
 
 ZenithGranularAudioProcessorEditor::~ZenithGranularAudioProcessorEditor()
@@ -405,6 +440,9 @@ void ZenithGranularAudioProcessorEditor::resized()
     auto area = getLocalBounds().reduced (10);
 
     titleLabel.setBounds (area.removeFromTop (22));
+
+    categoryMenuButton.setBounds (area.removeFromTop (24));
+    area.removeFromTop (4);
 
     auto presetRow1 = area.removeFromTop (26);
     starRating.setBounds (presetRow1.removeFromRight (54));

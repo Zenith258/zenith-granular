@@ -173,23 +173,25 @@ void PresetManager::ensureFactoryPresets()
         "808 Punch", "808 Sub", "808 Distorted", "808 Clean", "808 Wide",
         "Keys Warm", "Keys Bright", "Keys Dreamy", "Keys Granular", "Keys Vintage",
         "Pad Atmospheric", "Pad Dark", "Pad Bright", "Pad Drone",
-        "Lo-Fi Dust", "Lo-Fi Wobble", "Lo-Fi Crushed", "Lo-Fi Ambient"
+        "Lo-Fi Dust", "Lo-Fi Wobble", "Lo-Fi Crushed", "Lo-Fi Ambient",
+        "Bell Clean", "Bell Dark", "Bell Granular", "Bell Shimmer",
+        "Synth Lead", "Synth Pad", "Synth Pluck", "Synth Bass",
+        "Pluck Bright", "Pluck Warm", "Pluck Granular"
     };
 
-    // Garante o manifesto mesmo que os ficheiros já existam de uma versão
-    // anterior (para proteger contra apagar quem já tinha instalado antes).
-    auto manifestFile = getFactoryManifestFile();
-    if (! manifestFile.existsAsFile())
-    {
-        juce::StringArray arr;
-        for (auto& n : factoryNames)
-            arr.add (n);
-        manifestFile.replaceWithText (arr.joinIntoString ("\n"));
-    }
+    // Reescreve sempre o manifesto (não só na primeira vez) — assim, quando
+    // adicionamos categorias novas numa atualização, elas ficam protegidas
+    // contra remoção também nas instalações já existentes.
+    juce::StringArray arr;
+    for (auto& n : factoryNames)
+        arr.add (n);
+    getFactoryManifestFile().replaceWithText (arr.joinIntoString ("\n"));
 
-    auto marker = getPresetsFolder().getChildFile (".factory_seeded");
-    if (marker.existsAsFile())
-        return;
+    // Nota: não há marcador "já criado uma vez" — tenta sempre (re)criar
+    // cada preset de fábrica em falta. writeFactoryPreset() já ignora os
+    // que já existem, então isto é seguro de correr sempre; também repara
+    // instalações onde presets de fábrica tenham sido apagados por engano
+    // antes desta proteção existir.
 
     // --- PIANO ---
     writeFactoryPreset (state, "Piano Clean", {
@@ -410,5 +412,78 @@ void PresetManager::ensureFactoryPresets()
         { "reverbSize", 60 }, { "reverbDamping", 55 }, { "reverbMix", 40 }
     });
 
-    marker.create();
+    // --- BELL ---
+    writeFactoryPreset (state, "Bell Clean", {
+        { "samplerAttack", 1 }, { "samplerDecay", 800 }, { "samplerSustain", 30 }, { "samplerRelease", 1200 },
+        { "filterCutoff", 18000 }, { "filterResonance", 0 },
+        { "reverbSize", 50 }, { "reverbDamping", 40 }, { "reverbMix", 30 }
+    });
+    writeFactoryPreset (state, "Bell Dark", {
+        { "samplerAttack", 2 }, { "samplerDecay", 700 }, { "samplerSustain", 25 }, { "samplerRelease", 1000 },
+        { "filterCutoff", 5000 }, { "filterResonance", 10 },
+        { "satMode", 1 }, { "satDrive", 15 }, { "satMix", 20 },
+        { "reverbSize", 55 }, { "reverbDamping", 55 }, { "reverbMix", 35 }
+    });
+    writeFactoryPreset (state, "Bell Granular", {
+        { "samplerAttack", 1 }, { "samplerDecay", 600 }, { "samplerSustain", 20 }, { "samplerRelease", 900 },
+        { "grainSize", 50 }, { "grainDensity", 30 }, { "grainPosition", 10 }, { "grainPositionRandom", 20 },
+        { "grainPitchRandom", 15 }, { "grainPan", 60 }, { "granularMix", 45 },
+        { "filterCutoff", 12000 },
+        { "delayTime", 380 }, { "delayFeedback", 25 }, { "delayMix", 25 },
+        { "reverbSize", 60 }, { "reverbDamping", 40 }, { "reverbMix", 40 }
+    });
+    writeFactoryPreset (state, "Bell Shimmer", {
+        { "samplerAttack", 1 }, { "samplerDecay", 1000 }, { "samplerSustain", 20 }, { "samplerRelease", 2000 },
+        { "grainSize", 60 }, { "grainDensity", 15 }, { "grainPitchRandom", 8 }, { "granularMix", 25 },
+        { "filterCutoff", 20000 },
+        { "delayTime", 450 }, { "delayFeedback", 30 }, { "delayMix", 20 },
+        { "reverbSize", 70 }, { "reverbDamping", 25 }, { "reverbMix", 45 }
+    });
+
+    // --- SYNTH ---
+    writeFactoryPreset (state, "Synth Lead", {
+        { "samplerAttack", 2 }, { "samplerDecay", 200 }, { "samplerSustain", 85 }, { "samplerRelease", 150 },
+        { "filterCutoff", 12000 }, { "filterResonance", 15 },
+        { "satMode", 1 }, { "satDrive", 20 }, { "satMix", 25 },
+        { "delayTime", 280 }, { "delayFeedback", 20 }, { "delayMix", 15 }
+    });
+    writeFactoryPreset (state, "Synth Pad", {
+        { "samplerAttack", 600 }, { "samplerDecay", 900 }, { "samplerSustain", 100 }, { "samplerRelease", 1800 },
+        { "grainSize", 200 }, { "grainDensity", 35 }, { "grainPosition", 15 }, { "grainPositionRandom", 40 },
+        { "grainPitchRandom", 15 }, { "grainPan", 70 }, { "granularMix", 65 },
+        { "filterCutoff", 9000 },
+        { "delayTime", 500 }, { "delayFeedback", 35 }, { "delayMix", 28 },
+        { "reverbSize", 70 }, { "reverbDamping", 35 }, { "reverbMix", 50 }
+    });
+    writeFactoryPreset (state, "Synth Pluck", {
+        { "samplerAttack", 1 }, { "samplerDecay", 150 }, { "samplerSustain", 30 }, { "samplerRelease", 100 },
+        { "filterCutoff", 9000 }, { "filterResonance", 20 },
+        { "satMode", 0 }, { "satDrive", 10 }, { "satMix", 10 }
+    });
+    writeFactoryPreset (state, "Synth Bass", {
+        { "samplerAttack", 2 }, { "samplerDecay", 180 }, { "samplerSustain", 85 }, { "samplerRelease", 120 },
+        { "samplerPitch", -10 },
+        { "filterCutoff", 1500 }, { "filterResonance", 20 },
+        { "satMode", 2 }, { "satDrive", 40 }, { "satMix", 45 }
+    });
+
+    // --- PLUCK ---
+    writeFactoryPreset (state, "Pluck Bright", {
+        { "samplerAttack", 1 }, { "samplerDecay", 200 }, { "samplerSustain", 20 }, { "samplerRelease", 150 },
+        { "filterCutoff", 16000 }, { "filterResonance", 10 },
+        { "delayTime", 220 }, { "delayFeedback", 25 }, { "delayMix", 18 }
+    });
+    writeFactoryPreset (state, "Pluck Warm", {
+        { "samplerAttack", 2 }, { "samplerDecay", 250 }, { "samplerSustain", 25 }, { "samplerRelease", 200 },
+        { "filterCutoff", 7000 }, { "filterResonance", 5 },
+        { "satMode", 1 }, { "satDrive", 15 }, { "satMix", 18 },
+        { "reverbSize", 35 }, { "reverbDamping", 55 }, { "reverbMix", 18 }
+    });
+    writeFactoryPreset (state, "Pluck Granular", {
+        { "samplerAttack", 1 }, { "samplerDecay", 220 }, { "samplerSustain", 20 }, { "samplerRelease", 180 },
+        { "grainSize", 70 }, { "grainDensity", 20 }, { "grainPositionRandom", 15 }, { "grainPitchRandom", 10 },
+        { "grainPan", 50 }, { "granularMix", 30 },
+        { "filterCutoff", 11000 },
+        { "delayTime", 240 }, { "delayFeedback", 22 }, { "delayMix", 20 }
+    });
 }

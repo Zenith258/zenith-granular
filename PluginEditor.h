@@ -4,6 +4,8 @@
 #include "PluginProcessor.h"
 #include "ZenithLookAndFeel.h"
 #include "WaveformDisplay.h"
+#include <map>
+#include <vector>
 
 /**
     FASE 4b — Interface organizada em abas (Sampler / Granular / FX), em vez
@@ -117,6 +119,7 @@ private:
     };
 
     juce::ComboBox presetBox;
+    juce::TextButton categoryMenuButton { "Presets \xE2\x96\xBE" };
     StarRating starRating;
     juce::TextButton favoritesMenuButton { juce::String::fromUTF8 ("\xE2\x98\x85") + " Favoritos" };
     juce::TextButton savePresetButton { "Save" };
