@@ -58,8 +58,9 @@ public:
     void deletePreset (const juce::String& name) { presetManager.deletePreset (name); }
     juce::StringArray getAllPresets() const { return presetManager.getAllPresets(); }
 
-    void setPresetFavorite (const juce::String& name, bool fav) { presetManager.setFavorite (name, fav); }
-    bool isPresetFavorite (const juce::String& name) const { return presetManager.isFavorite (name); }
+    bool isFactoryPreset (const juce::String& name) const { return presetManager.isFactoryPreset (name); }
+    int getPresetRating (const juce::String& name) const { return presetManager.getRating (name); }
+    void setPresetRating (const juce::String& name, int stars) { presetManager.setRating (name, stars); }
     juce::StringArray getFavoritePresets() const { return presetManager.getFavoritePresets(); }
 
     juce::AudioProcessorValueTreeState apvts;

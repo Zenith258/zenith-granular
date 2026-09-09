@@ -216,25 +216,43 @@ ZenithGranularAudioProcessorEditor::ZenithGranularAudioProcessorEditor (ZenithGr
             const auto path = audioProcessor.getLoadedSamplePath();
             if (path.isNotEmpty())
                 waveformDisplay.setSource (juce::File (path));
-            const auto fav = audioProcessor.isPresetFavorite (name);
-            favoriteButton.setButtonText (fav ? juce::String::fromUTF8 ("\xE2\x98\x85")
-                                               : juce::String::fromUTF8 ("\xE2\x98\x86"));
+            starRating.rating = audioProcessor.getPresetRating (name);
+            starRating.repaint();
         }
     };
     addAndMakeVisible (presetBox);
 
-    favoriteButton.onClick = [this]
+    starRating.onRatingChanged = [this] (int newRating)
     {
         const auto name = presetBox.getText();
         if (name.isNotEmpty())
-        {
-            const auto newFav = ! audioProcessor.isPresetFavorite (name);
-            audioProcessor.setPresetFavorite (name, newFav);
-            favoriteButton.setButtonText (newFav ? juce::String::fromUTF8 ("\xE2\x98\x85")
-                                                  : juce::String::fromUTF8 ("\xE2\x98\x86"));
-        }
+            audioProcessor.setPresetRating (name, newRating);
     };
-    addAndMakeVisible (favoriteButton);
+    addAndMakeVisible (starRating);
+
+    favoritesMenuButton.onClick = [this]
+    {
+        const auto favs = audioProcessor.getFavoritePresets();
+        juce::PopupMenu menu;
+        if (favs.isEmpty())
+        {
+            menu.addItem (1, "(sem favoritos ainda)", false);
+        }
+        else
+        {
+            int itemId = 1;
+            for (auto& name : favs)
+                menu.addItem (itemId++, name);
+        }
+
+        menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (favoritesMenuButton),
+            [this, favs] (int result)
+            {
+                if (result >= 1 && result <= favs.size())
+                    presetBox.setText (favs[result - 1], juce::sendNotificationSync);
+            });
+    };
+    addAndMakeVisible (favoritesMenuButton);
 
     savePresetButton.onClick = [this] { promptSavePreset(); };
     addAndMakeVisible (savePresetButton);
@@ -242,16 +260,21 @@ ZenithGranularAudioProcessorEditor::ZenithGranularAudioProcessorEditor (ZenithGr
     deletePresetButton.onClick = [this]
     {
         const auto name = presetBox.getText();
-        if (name.isNotEmpty())
+        if (name.isEmpty())
+            return;
+
+        if (audioProcessor.isFactoryPreset (name))
         {
-            audioProcessor.deletePreset (name);
-            refreshPresetList();
+            juce::AlertWindow::showMessageBoxAsync (juce::AlertWindow::InfoIcon,
+                "Preset de fabrica",
+                "Nao e possivel apagar presets nativos do plugin - so os teus proprios.");
+            return;
         }
+
+        audioProcessor.deletePreset (name);
+        refreshPresetList();
     };
     addAndMakeVisible (deletePresetButton);
-
-    showFavoritesOnlyToggle.onClick = [this] { refreshPresetList(); };
-    addAndMakeVisible (showFavoritesOnlyToggle);
 
     refreshPresetList();
 
@@ -281,11 +304,8 @@ ZenithGranularAudioProcessorEditor::~ZenithGranularAudioProcessorEditor()
 void ZenithGranularAudioProcessorEditor::refreshPresetList()
 {
     presetBox.clear();
-    const auto names = showFavoritesOnlyToggle.getToggleState()
-                          ? audioProcessor.getFavoritePresets()
-                          : audioProcessor.getAllPresets();
     int id = 1;
-    for (auto& name : names)
+    for (auto& name : audioProcessor.getAllPresets())
         presetBox.addItem (name, id++);
 }
 
@@ -307,6 +327,8 @@ void ZenithGranularAudioProcessorEditor::promptSavePreset()
                 audioProcessor.savePreset (name);
                 refreshPresetList();
                 presetBox.setText (name, juce::dontSendNotification);
+                starRating.rating = audioProcessor.getPresetRating (name);
+                starRating.repaint();
             }
         }
         presetNameWindow.reset();
@@ -385,14 +407,14 @@ void ZenithGranularAudioProcessorEditor::resized()
     titleLabel.setBounds (area.removeFromTop (22));
 
     auto presetRow1 = area.removeFromTop (26);
-    favoriteButton.setBounds (presetRow1.removeFromRight (28));
+    starRating.setBounds (presetRow1.removeFromRight (54));
     presetRow1.removeFromRight (4);
     presetBox.setBounds (presetRow1);
 
     area.removeFromTop (4);
 
     auto presetRow2 = area.removeFromTop (22);
-    showFavoritesOnlyToggle.setBounds (presetRow2.removeFromRight (110));
+    favoritesMenuButton.setBounds (presetRow2.removeFromRight (100));
     deletePresetButton.setBounds (presetRow2.removeFromRight (60));
     presetRow2.removeFromRight (4);
     savePresetButton.setBounds (presetRow2.removeFromLeft (60));

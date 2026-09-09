@@ -4,14 +4,12 @@
 
 namespace
 {
-    /** Preset de fábrica: só valores de ADSR/Granular/FX — sem samplePath,
-        para se aplicar a qualquer sample que o utilizador já tenha carregado. */
     void writeFactoryPreset (juce::AudioProcessorValueTreeState& state, const juce::String& name,
                               const std::vector<std::pair<juce::String, float>>& values)
     {
         auto file = PresetManager::getPresetsFolder().getChildFile (name + ".zgpreset");
         if (file.existsAsFile())
-            return; // não sobrescreve se o utilizador já tem um preset com este nome
+            return;
 
         juce::XmlElement xml (state.state.getType());
         for (auto& v : values)
@@ -37,10 +35,8 @@ juce::File PresetManager::getPresetsFolder()
     return dir;
 }
 
-juce::File PresetManager::getFavoritesFile()
-{
-    return getPresetsFolder().getChildFile ("favorites.txt");
-}
+juce::File PresetManager::getRatingsFile() { return getPresetsFolder().getChildFile ("ratings.txt"); }
+juce::File PresetManager::getFactoryManifestFile() { return getPresetsFolder().getChildFile (".factory_presets.txt"); }
 
 juce::StringArray PresetManager::getAllPresets() const
 {
@@ -73,15 +69,11 @@ void PresetManager::loadPreset (const juce::String& name)
     if (xml == nullptr)
         return;
 
-    // Aplica cada parâmetro através de getParameterAsValue — o mesmo
-    // mecanismo já usado (e confirmado a funcionar) pelos Macros. Evitamos
-    // "replaceState" porque presets de fábrica só têm um subconjunto de
-    // parâmetros, e o replaceState não estava a refletir isso nos knobs.
     for (int i = 0; i < xml->getNumAttributes(); ++i)
     {
         const auto id = xml->getAttributeName (i);
         if (id == "samplePath")
-            continue; // tratado à parte, logo a seguir
+            continue;
 
         if (state.getParameter (id) != nullptr)
             state.getParameterAsValue (id).setValue (xml->getAttributeValue (i).getDoubleValue());
@@ -91,47 +83,115 @@ void PresetManager::loadPreset (const juce::String& name)
         state.state.setProperty ("samplePath", xml->getStringAttribute ("samplePath"), nullptr);
 }
 
+bool PresetManager::isFactoryPreset (const juce::String& name) const
+{
+    auto file = getFactoryManifestFile();
+    if (! file.existsAsFile())
+        return false;
+    juce::StringArray lines;
+    file.readLines (lines);
+    return lines.contains (name);
+}
+
 void PresetManager::deletePreset (const juce::String& name)
 {
+    if (isFactoryPreset (name))
+        return; // presets nativos não podem ser apagados
+
     getPresetsFolder().getChildFile (name + ".zgpreset").deleteFile();
-    setFavorite (name, false);
+    setRating (name, 0);
 }
 
-bool PresetManager::isFavorite (const juce::String& name) const
+int PresetManager::getRating (const juce::String& name) const
 {
-    return getFavoritePresets().contains (name);
+    auto file = getRatingsFile();
+    if (! file.existsAsFile())
+        return 0;
+
+    juce::StringArray lines;
+    file.readLines (lines);
+    for (auto& line : lines)
+    {
+        const auto n = line.upToFirstOccurrenceOf ("|", false, false);
+        if (n == name)
+            return line.fromFirstOccurrenceOf ("|", false, false).getIntValue();
+    }
+    return 0;
 }
 
-void PresetManager::setFavorite (const juce::String& name, bool shouldBeFavorite)
+void PresetManager::setRating (const juce::String& name, int stars)
 {
-    auto favorites = getFavoritePresets();
-    if (shouldBeFavorite)
-        favorites.addIfNotAlreadyThere (name);
-    else
-        favorites.removeString (name);
+    stars = juce::jlimit (0, 3, stars);
 
-    getFavoritesFile().replaceWithText (favorites.joinIntoString ("\n"));
+    auto file = getRatingsFile();
+    juce::StringArray lines;
+    if (file.existsAsFile())
+        file.readLines (lines);
+
+    bool found = false;
+    for (auto& line : lines)
+    {
+        const auto n = line.upToFirstOccurrenceOf ("|", false, false);
+        if (n == name)
+        {
+            line = name + "|" + juce::String (stars);
+            found = true;
+            break;
+        }
+    }
+    if (! found)
+        lines.add (name + "|" + juce::String (stars));
+
+    file.replaceWithText (lines.joinIntoString ("\n"));
 }
 
 juce::StringArray PresetManager::getFavoritePresets() const
 {
-    auto file = getFavoritesFile();
+    juce::StringArray result;
+    auto file = getRatingsFile();
     if (! file.existsAsFile())
-        return {};
+        return result;
 
     juce::StringArray lines;
     file.readLines (lines);
-    lines.removeEmptyStrings();
-    return lines;
+    for (auto& line : lines)
+    {
+        const auto n = line.upToFirstOccurrenceOf ("|", false, false);
+        const auto r = line.fromFirstOccurrenceOf ("|", false, false).getIntValue();
+        if (r > 0 && n.isNotEmpty())
+            result.add (n);
+    }
+    result.sort (true);
+    return result;
 }
 
 void PresetManager::ensureFactoryPresets()
 {
+    static const std::vector<juce::String> factoryNames = {
+        "Piano Clean", "Piano Bright", "Piano Soft", "Piano Dark", "Piano Granular",
+        "Bass Deep", "Bass Bright", "Bass Sub", "Bass Distorted", "Bass Granular",
+        "808 Punch", "808 Sub", "808 Distorted", "808 Clean", "808 Wide",
+        "Keys Warm", "Keys Bright", "Keys Dreamy", "Keys Granular", "Keys Vintage",
+        "Pad Atmospheric", "Pad Dark", "Pad Bright", "Pad Drone",
+        "Lo-Fi Dust", "Lo-Fi Wobble", "Lo-Fi Crushed", "Lo-Fi Ambient"
+    };
+
+    // Garante o manifesto mesmo que os ficheiros já existam de uma versão
+    // anterior (para proteger contra apagar quem já tinha instalado antes).
+    auto manifestFile = getFactoryManifestFile();
+    if (! manifestFile.existsAsFile())
+    {
+        juce::StringArray arr;
+        for (auto& n : factoryNames)
+            arr.add (n);
+        manifestFile.replaceWithText (arr.joinIntoString ("\n"));
+    }
+
     auto marker = getPresetsFolder().getChildFile (".factory_seeded");
     if (marker.existsAsFile())
-        return; // já foram criados uma vez — não repor se o utilizador apagar algum
+        return;
 
-    // --- PIANO (3 variações) ---
+    // --- PIANO ---
     writeFactoryPreset (state, "Piano Clean", {
         { "samplerAttack", 5 }, { "samplerDecay", 300 }, { "samplerSustain", 80 }, { "samplerRelease", 400 },
         { "filterCutoff", 20000 }, { "filterResonance", 0 },
@@ -148,8 +208,21 @@ void PresetManager::ensureFactoryPresets()
         { "satMode", 1 }, { "satDrive", 10 }, { "satMix", 15 },
         { "reverbSize", 50 }, { "reverbDamping", 70 }, { "reverbMix", 30 }
     });
+    writeFactoryPreset (state, "Piano Dark", {
+        { "samplerAttack", 15 }, { "samplerDecay", 400 }, { "samplerSustain", 75 }, { "samplerRelease", 500 },
+        { "filterCutoff", 6000 }, { "filterResonance", 5 },
+        { "satMode", 1 }, { "satDrive", 10 }, { "satMix", 15 },
+        { "reverbSize", 55 }, { "reverbDamping", 60 }, { "reverbMix", 30 }
+    });
+    writeFactoryPreset (state, "Piano Granular", {
+        { "samplerAttack", 20 }, { "samplerDecay", 350 }, { "samplerSustain", 80 }, { "samplerRelease", 600 },
+        { "grainSize", 120 }, { "grainDensity", 18 }, { "grainPositionRandom", 8 }, { "grainPitchRandom", 4 },
+        { "grainPan", 35 }, { "granularMix", 20 },
+        { "filterCutoff", 15000 },
+        { "reverbSize", 35 }, { "reverbDamping", 55 }, { "reverbMix", 20 }
+    });
 
-    // --- BASS (3 variações) ---
+    // --- BASS ---
     writeFactoryPreset (state, "Bass Deep", {
         { "samplerAttack", 2 }, { "samplerDecay", 150 }, { "samplerSustain", 90 }, { "samplerRelease", 100 },
         { "samplerPitch", -12 },
@@ -168,8 +241,21 @@ void PresetManager::ensureFactoryPresets()
         { "filterCutoff", 400 }, { "filterResonance", 10 },
         { "satMode", 1 }, { "satDrive", 15 }, { "satMix", 20 }
     });
+    writeFactoryPreset (state, "Bass Distorted", {
+        { "samplerAttack", 1 }, { "samplerDecay", 130 }, { "samplerSustain", 80 }, { "samplerRelease", 90 },
+        { "samplerPitch", -10 },
+        { "filterCutoff", 1800 }, { "filterResonance", 25 },
+        { "satMode", 2 }, { "satDrive", 70 }, { "satMix", 75 }
+    });
+    writeFactoryPreset (state, "Bass Granular", {
+        { "samplerAttack", 5 }, { "samplerDecay", 200 }, { "samplerSustain", 85 }, { "samplerRelease", 150 },
+        { "samplerPitch", -10 },
+        { "grainSize", 80 }, { "grainDensity", 22 }, { "granularMix", 25 },
+        { "filterCutoff", 1500 }, { "filterResonance", 15 },
+        { "satMode", 1 }, { "satDrive", 25 }, { "satMix", 30 }
+    });
 
-    // --- 808 (3 variações) ---
+    // --- 808 ---
     writeFactoryPreset (state, "808 Punch", {
         { "samplerAttack", 1 }, { "samplerDecay", 250 }, { "samplerSustain", 60 }, { "samplerRelease", 200 },
         { "samplerPitch", -5 },
@@ -188,8 +274,22 @@ void PresetManager::ensureFactoryPresets()
         { "filterCutoff", 6000 }, { "filterResonance", 20 },
         { "satMode", 2 }, { "satDrive", 75 }, { "satMix", 80 }
     });
+    writeFactoryPreset (state, "808 Clean", {
+        { "samplerAttack", 1 }, { "samplerDecay", 300 }, { "samplerSustain", 65 }, { "samplerRelease", 250 },
+        { "samplerPitch", -7 },
+        { "filterCutoff", 5000 }, { "filterResonance", 5 },
+        { "satMode", 0 }, { "satDrive", 5 }, { "satMix", 10 }
+    });
+    writeFactoryPreset (state, "808 Wide", {
+        { "samplerAttack", 1 }, { "samplerDecay", 280 }, { "samplerSustain", 60 }, { "samplerRelease", 300 },
+        { "samplerPitch", -6 },
+        { "filterCutoff", 4500 }, { "filterResonance", 12 },
+        { "satMode", 1 }, { "satDrive", 20 }, { "satMix", 25 },
+        { "delayTime", 280 }, { "delayFeedback", 20 }, { "delayMix", 18 },
+        { "reverbSize", 50 }, { "reverbDamping", 50 }, { "reverbMix", 25 }
+    });
 
-    // --- KEYS (3 variações) ---
+    // --- KEYS ---
     writeFactoryPreset (state, "Keys Warm", {
         { "samplerAttack", 8 }, { "samplerDecay", 400 }, { "samplerSustain", 70 }, { "samplerRelease", 600 },
         { "grainSize", 150 }, { "grainDensity", 15 }, { "grainPositionRandom", 10 }, { "grainPitchRandom", 5 },
@@ -216,8 +316,22 @@ void PresetManager::ensureFactoryPresets()
         { "delayTime", 500 }, { "delayFeedback", 35 }, { "delayMix", 30 },
         { "reverbSize", 70 }, { "reverbDamping", 40 }, { "reverbMix", 45 }
     });
+    writeFactoryPreset (state, "Keys Granular", {
+        { "samplerAttack", 10 }, { "samplerDecay", 400 }, { "samplerSustain", 75 }, { "samplerRelease", 700 },
+        { "grainSize", 180 }, { "grainDensity", 28 }, { "grainPosition", 5 }, { "grainPositionRandom", 25 },
+        { "grainPitchRandom", 12 }, { "grainPan", 60 }, { "granularMix", 40 },
+        { "filterCutoff", 11000 },
+        { "delayTime", 420 }, { "delayFeedback", 25 }, { "delayMix", 18 },
+        { "reverbSize", 55 }, { "reverbDamping", 45 }, { "reverbMix", 30 }
+    });
+    writeFactoryPreset (state, "Keys Vintage", {
+        { "samplerAttack", 12 }, { "samplerDecay", 450 }, { "samplerSustain", 72 }, { "samplerRelease", 550 },
+        { "filterCutoff", 8000 }, { "filterResonance", 8 },
+        { "satMode", 1 }, { "satDrive", 20 }, { "satMix", 25 },
+        { "reverbSize", 50 }, { "reverbDamping", 65 }, { "reverbMix", 28 }
+    });
 
-    // --- PAD (2 variações) ---
+    // --- PAD ---
     writeFactoryPreset (state, "Pad Atmospheric", {
         { "samplerAttack", 800 }, { "samplerDecay", 1000 }, { "samplerSustain", 100 }, { "samplerRelease", 2000 },
         { "grainSize", 250 }, { "grainDensity", 40 }, { "grainPosition", 20 }, { "grainPositionRandom", 60 },
@@ -236,8 +350,25 @@ void PresetManager::ensureFactoryPresets()
         { "delayTime", 700 }, { "delayFeedback", 50 }, { "delayMix", 40 },
         { "reverbSize", 90 }, { "reverbDamping", 20 }, { "reverbMix", 70 }
     });
+    writeFactoryPreset (state, "Pad Bright", {
+        { "samplerAttack", 600 }, { "samplerDecay", 900 }, { "samplerSustain", 100 }, { "samplerRelease", 1800 },
+        { "grainSize", 220 }, { "grainDensity", 38 }, { "grainPosition", 15 }, { "grainPositionRandom", 45 },
+        { "grainPitchRandom", 12 }, { "grainPan", 75 }, { "granularMix", 70 },
+        { "filterCutoff", 14000 }, { "filterResonance", 8 },
+        { "delayTime", 550 }, { "delayFeedback", 40 }, { "delayMix", 30 },
+        { "reverbSize", 75 }, { "reverbDamping", 25 }, { "reverbMix", 55 }
+    });
+    writeFactoryPreset (state, "Pad Drone", {
+        { "samplerAttack", 2000 }, { "samplerDecay", 1500 }, { "samplerSustain", 100 }, { "samplerRelease", 3000 },
+        { "grainSize", 350 }, { "grainDensity", 45 }, { "grainPosition", 40 }, { "grainPositionRandom", 70 },
+        { "grainPitchRandom", 25 }, { "grainPan", 95 }, { "granularMix", 90 },
+        { "filterCutoff", 3000 }, { "filterResonance", 20 },
+        { "satMode", 1 }, { "satDrive", 25 }, { "satMix", 30 },
+        { "delayTime", 800 }, { "delayFeedback", 55 }, { "delayMix", 45 },
+        { "reverbSize", 95 }, { "reverbDamping", 15 }, { "reverbMix", 75 }
+    });
 
-    // --- LO-FI (2 variações) ---
+    // --- LO-FI ---
     writeFactoryPreset (state, "Lo-Fi Dust", {
         { "samplerAttack", 20 }, { "samplerDecay", 300 }, { "samplerSustain", 70 }, { "samplerRelease", 500 },
         { "samplerFineTune", -8 },
@@ -257,6 +388,26 @@ void PresetManager::ensureFactoryPresets()
         { "satMode", 0 }, { "satDrive", 65 }, { "satMix", 70 },
         { "delayTime", 200 }, { "delayFeedback", 30 }, { "delayMix", 25 },
         { "reverbSize", 35 }, { "reverbDamping", 75 }, { "reverbMix", 15 }
+    });
+    writeFactoryPreset (state, "Lo-Fi Crushed", {
+        { "samplerAttack", 10 }, { "samplerDecay", 250 }, { "samplerSustain", 60 }, { "samplerRelease", 400 },
+        { "samplerFineTune", -12 },
+        { "grainSize", 40 }, { "grainDensity", 28 }, { "grainPositionRandom", 35 },
+        { "grainPitchRandom", 20 }, { "grainPan", 45 }, { "granularMix", 40 },
+        { "filterCutoff", 2200 }, { "filterResonance", 25 },
+        { "satMode", 0 }, { "satDrive", 80 }, { "satMix", 85 },
+        { "delayTime", 220 }, { "delayFeedback", 28 }, { "delayMix", 22 },
+        { "reverbSize", 30 }, { "reverbDamping", 80 }, { "reverbMix", 12 }
+    });
+    writeFactoryPreset (state, "Lo-Fi Ambient", {
+        { "samplerAttack", 30 }, { "samplerDecay", 400 }, { "samplerSustain", 75 }, { "samplerRelease", 700 },
+        { "samplerFineTune", -6 },
+        { "grainSize", 70 }, { "grainDensity", 22 }, { "grainPosition", 15 }, { "grainPositionRandom", 25 },
+        { "grainPitchRandom", 10 }, { "grainPan", 55 }, { "granularMix", 40 },
+        { "filterCutoff", 4200 }, { "filterResonance", 12 },
+        { "satMode", 1 }, { "satDrive", 35 }, { "satMix", 40 },
+        { "delayTime", 320 }, { "delayFeedback", 35 }, { "delayMix", 30 },
+        { "reverbSize", 60 }, { "reverbDamping", 55 }, { "reverbMix", 40 }
     });
 
     marker.create();

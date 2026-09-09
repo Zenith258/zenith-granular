@@ -4,9 +4,8 @@
 
 /**
     Guarda e carrega o estado completo da APVTS (todos os knobs) em ficheiros
-    .zgpreset dentro da pasta de dados do utilizador — não depende do projeto
-    do DAW, os presets ficam disponíveis em qualquer música. Também guarda
-    quais os presets marcados como favoritos.
+    .zgpreset. Presets de fábrica são protegidos contra remoção (registados
+    num manifesto). Cada preset pode ter uma classificação de 0-3 estrelas.
 */
 class PresetManager
 {
@@ -19,13 +18,16 @@ public:
     void loadPreset (const juce::String& name);
     void deletePreset (const juce::String& name);
 
-    bool isFavorite (const juce::String& name) const;
-    void setFavorite (const juce::String& name, bool shouldBeFavorite);
-    juce::StringArray getFavoritePresets() const;
+    bool isFactoryPreset (const juce::String& name) const;
+
+    int getRating (const juce::String& name) const;          // 0-3
+    void setRating (const juce::String& name, int stars);    // 0-3
+    juce::StringArray getFavoritePresets() const;             // rating > 0
 
 private:
     void ensureFactoryPresets();
-    static juce::File getFavoritesFile();
+    static juce::File getRatingsFile();
+    static juce::File getFactoryManifestFile();
 
     juce::AudioProcessorValueTreeState& state;
 };

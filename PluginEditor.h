@@ -85,11 +85,42 @@ private:
     ZenithLookAndFeel lookAndFeel;
 
     juce::Label titleLabel;
+    /** 3 estrelas clicáveis, como a classificação de presets do Zenology. */
+    struct StarRating : public juce::Component
+    {
+        std::function<void (int)> onRatingChanged;
+        int rating = 0;
+
+        void paint (juce::Graphics& g) override
+        {
+            const auto w = getWidth() / 3.0f;
+            for (int i = 0; i < 3; ++i)
+            {
+                const auto filled = i < rating;
+                g.setColour (filled ? juce::Colour (0xffffd54f) : juce::Colour (0xff5a606b));
+                g.setFont (15.0f);
+                g.drawFittedText (juce::String::fromUTF8 ("\xE2\x98\x85"),
+                                   juce::Rectangle<int> ((int) (i * w), 0, (int) w, getHeight()),
+                                   juce::Justification::centred, 1);
+            }
+        }
+
+        void mouseUp (const juce::MouseEvent& e) override
+        {
+            const auto w = getWidth() / 3.0f;
+            const auto clicked = juce::jlimit (1, 3, (int) (e.position.x / w) + 1);
+            rating = (rating == clicked) ? 0 : clicked; // clicar na mesma estrela limpa
+            repaint();
+            if (onRatingChanged != nullptr)
+                onRatingChanged (rating);
+        }
+    };
+
     juce::ComboBox presetBox;
-    juce::TextButton favoriteButton { juce::String::fromUTF8 ("\xE2\x98\x86") }; // estrela vazia
+    StarRating starRating;
+    juce::TextButton favoritesMenuButton { juce::String::fromUTF8 ("\xE2\x98\x85") + " Favoritos" };
     juce::TextButton savePresetButton { "Save" };
     juce::TextButton deletePresetButton { "Delete" };
-    juce::ToggleButton showFavoritesOnlyToggle { "Favoritos" };
     std::unique_ptr<juce::AlertWindow> presetNameWindow;
 
     juce::TextButton loadButton { "Load Sample..." };

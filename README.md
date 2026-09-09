@@ -48,33 +48,26 @@ dos Macros.
   e botões com a identidade visual do projeto.
 - Waveform real do sample carregado, no topo da janela.
 
+## Presets de fábrica
+28 presets nativos, protegidos contra remoção acidental (o botão Delete
+recusa apagar presets de fábrica, só os teus). Variações por categoria:
+- Piano: Clean, Bright, Soft, Dark, Granular (5)
+- Bass: Deep, Bright, Sub, Distorted, Granular (5)
+- 808: Punch, Sub, Distorted, Clean, Wide (5)
+- Keys: Warm, Bright, Dreamy, Granular, Vintage (5)
+- Pad: Atmospheric, Dark, Bright, Drone (4)
+- Lo-Fi: Dust, Wobble, Crushed, Ambient (4)
+
+## Classificação por estrelas (1-3) e favoritos
+Ao lado da lista de presets há 3 estrelas clicáveis (como no Zenology) para
+classificares o preset atual. O botão "Favoritos" abre um menu só com os
+presets classificados, sem esconder ou alterar a lista principal.
+
+## Correção importante
+O carregamento de presets estava a mostrar o nome escolhido mas sem mexer
+nos knobs de verdade. Corrigido - agora usa o mesmo mecanismo já testado
+dos Macros.
+
 ## Próximo passo (Fase 7b)
 Continuar o design: animação dos grãos sobre a waveform, e depois a
 biblioteca nativa de samples (Fase 6b).
-
-## Como compilar (Windows, gratuito)
-1. Instala o [CMake](https://cmake.org/download/) e o
-   [Visual Studio Community](https://visualstudio.microsoft.com/) (gratuito,
-   com a carga de trabalho "Desenvolvimento para desktop com C++").
-2. Abre o **cmd** (Prompt de Comando) dentro desta pasta e corre exatamente
-   estes dois comandos, um de cada vez (o `--config Release` no segundo é
-   obrigatório — sem ele o Visual Studio compila em Debug e o ficheiro
-   fica noutra pasta):
-   ```
-   cmake -B build
-   cmake --build build --config Release
-   ```
-3. Na primeira vez, o CMake vai descarregar o JUCE automaticamente
-   (precisa de internet só nesse passo).
-4. O ficheiro gerado chama-se `ZenithGranular.vst3` e fica em:
-   `build\ZenithGranular_artefacts\Release\VST3\ZenithGranular.vst3`
-5. Como o CMakeLists já tem `COPY_PLUGIN_AFTER_BUILD TRUE`, ele também é
-   copiado automaticamente para `C:\Program Files\Common Files\VST3`.
-   Se não aparecer lá (às vezes o Windows bloqueia por permissão), copia
-   à mão da pasta do passo 4 para essa pasta.
-
-**Se não encontrares o ficheiro**, abre o cmd na pasta do projeto e corre
-`dir /s /b *.vst3` — isso procura em todas as subpastas e mostra o caminho
-exato de qualquer `.vst3` gerado, mesmo que tenha ficado em Debug.
-
-
