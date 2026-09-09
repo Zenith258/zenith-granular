@@ -13,7 +13,7 @@ SamplerEngine::SamplerEngine()
    #endif
 
     for (int i = 0; i < numVoices; ++i)
-        synth.addVoice (new ZenithSamplerVoice (voiceParams));
+        synth.addVoice (new ZenithSamplerVoice (voiceParams, grainVisualizer, i * GrainVisualizer::grainsPerVoice));
 }
 
 void SamplerEngine::prepare (double sampleRate, int /*samplesPerBlock*/)

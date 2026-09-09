@@ -51,6 +51,7 @@ public:
     void loadSample (const juce::File& file);
     bool hasSampleLoaded() const { return samplerEngine.hasSampleLoaded(); }
     juce::String getLoadedSamplePath() const { return apvts.state.getProperty ("samplePath", "").toString(); }
+    std::array<float, GrainVisualizer::maxVisibleGrains> getGrainSnapshot() const { return samplerEngine.getGrainSnapshot(); }
 
     // --- Presets (Fase 6) ---
     void savePreset (const juce::String& name) { presetManager.savePreset (name); }

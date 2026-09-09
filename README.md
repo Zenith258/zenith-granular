@@ -53,6 +53,16 @@ presets classificados, sem esconder ou alterar a lista principal.
   a aparecer sozinhos (sistema auto-reparável, sem depender de um
   "marcador" que impedia a reposição).
 
-## Próximo passo (Fase 7b)
-Continuar o design: animação dos grãos sobre a waveform, e depois a
-biblioteca nativa de samples (Fase 6b).
+## Correções de interface
+- Removidos símbolos Unicode que não apareciam bem em alguns PCs (seta do
+  botão "Presets", estrela do botão "Favoritos" - agora só texto).
+- As 3 estrelas de classificação agora são desenhadas como forma vetorial
+  (Path), não dependem da fonte do sistema ter o carácter de estrela.
+
+## Animação dos grãos (Fase 7 - continuação)
+Pontos roxos aparecem sobre a waveform, movendo-se de acordo com a posição
+real de leitura dos grãos ativos no motor granular - atualizado ~30x por
+segundo. Só é visível quando o "Granular Mix" está acima de 0%.
+
+## Próximo passo (Fase 7c)
+Mais refinamento visual, e depois a biblioteca nativa de samples (Fase 6b).

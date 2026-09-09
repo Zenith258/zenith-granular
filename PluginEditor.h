@@ -6,6 +6,7 @@
 #include "WaveformDisplay.h"
 #include <map>
 #include <vector>
+#include <cmath>
 
 /**
     FASE 4b — Interface organizada em abas (Sampler / Granular / FX), em vez
@@ -13,7 +14,8 @@
     design definitivo (isso é a FASE 7).
 */
 class ZenithGranularAudioProcessorEditor : public juce::AudioProcessorEditor,
-                                            public juce::FileDragAndDropTarget
+                                            public juce::FileDragAndDropTarget,
+                                            private juce::Timer
 {
 public:
     explicit ZenithGranularAudioProcessorEditor (ZenithGranularAudioProcessor&);
@@ -28,6 +30,8 @@ public:
     void filesDropped (const juce::StringArray& files, int x, int y) override;
 
 private:
+    void timerCallback() override;
+
     using SliderAttachment   = juce::AudioProcessorValueTreeState::SliderAttachment;
     using ComboBoxAttachment = juce::AudioProcessorValueTreeState::ComboBoxAttachment;
 
@@ -98,12 +102,14 @@ private:
             const auto w = getWidth() / 3.0f;
             for (int i = 0; i < 3; ++i)
             {
+                auto cell = juce::Rectangle<float> (i * w, 0.0f, w, (float) getHeight()).reduced (3.0f);
+                auto star = makeStarPath (cell);
                 const auto filled = i < rating;
-                g.setColour (filled ? juce::Colour (0xffffd54f) : juce::Colour (0xff5a606b));
-                g.setFont (15.0f);
-                g.drawFittedText (juce::String::fromUTF8 ("\xE2\x98\x85"),
-                                   juce::Rectangle<int> ((int) (i * w), 0, (int) w, getHeight()),
-                                   juce::Justification::centred, 1);
+
+                g.setColour (filled ? juce::Colour (0xffffd54f) : juce::Colour (0xff3a3f4a));
+                g.fillPath (star);
+                g.setColour (juce::Colour (0xff5a606b));
+                g.strokePath (star, juce::PathStrokeType (1.0f));
             }
         }
 
@@ -116,12 +122,39 @@ private:
             if (onRatingChanged != nullptr)
                 onRatingChanged (rating);
         }
+
+    private:
+        /** Desenha uma estrela de 5 pontas como Path — funciona sempre,
+            independente de a fonte do sistema ter ou não o carácter ★. */
+        static juce::Path makeStarPath (juce::Rectangle<float> bounds)
+        {
+            juce::Path star;
+            const auto cx = bounds.getCentreX();
+            const auto cy = bounds.getCentreY();
+            const auto outerR = juce::jmin (bounds.getWidth(), bounds.getHeight()) * 0.5f;
+            const auto innerR = outerR * 0.42f;
+
+            for (int i = 0; i < 10; ++i)
+            {
+                const auto radius = (i % 2 == 0) ? outerR : innerR;
+                const auto angle = (juce::MathConstants<float>::pi / 5.0f) * (float) i
+                                    - juce::MathConstants<float>::halfPi;
+                const auto x = cx + radius * std::cos (angle);
+                const auto y = cy + radius * std::sin (angle);
+                if (i == 0)
+                    star.startNewSubPath (x, y);
+                else
+                    star.lineTo (x, y);
+            }
+            star.closeSubPath();
+            return star;
+        }
     };
 
     juce::ComboBox presetBox;
-    juce::TextButton categoryMenuButton { "Presets \xE2\x96\xBE" };
+    juce::TextButton categoryMenuButton { "Presets" };
     StarRating starRating;
-    juce::TextButton favoritesMenuButton { juce::String::fromUTF8 ("\xE2\x98\x85") + " Favoritos" };
+    juce::TextButton favoritesMenuButton { "Favoritos" };
     juce::TextButton savePresetButton { "Save" };
     juce::TextButton deletePresetButton { "Delete" };
     std::unique_ptr<juce::AlertWindow> presetNameWindow;

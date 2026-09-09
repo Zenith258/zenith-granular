@@ -329,10 +329,13 @@ ZenithGranularAudioProcessorEditor::ZenithGranularAudioProcessorEditor (ZenithGr
     addAndMakeVisible (tabs);
 
     setSize (480, 536);
+
+    startTimerHz (30);
 }
 
 ZenithGranularAudioProcessorEditor::~ZenithGranularAudioProcessorEditor()
 {
+    stopTimer();
     setLookAndFeel (nullptr);
 }
 
@@ -368,6 +371,13 @@ void ZenithGranularAudioProcessorEditor::promptSavePreset()
         }
         presetNameWindow.reset();
     }), true);
+}
+
+void ZenithGranularAudioProcessorEditor::timerCallback()
+{
+    const auto snapshot = audioProcessor.getGrainSnapshot();
+    std::vector<float> positions (snapshot.begin(), snapshot.end());
+    waveformDisplay.setGrainPositions (positions);
 }
 
 void ZenithGranularAudioProcessorEditor::loadFile (const juce::File& file)

@@ -30,6 +30,23 @@ struct SamplerVoiceParams
     std::atomic<float>* granularMix          = nullptr; // % — 0 = só sampler normal, 100 = só textura granular
 };
 
+/**
+    Estado partilhado, lido pela UI (~30x/s) para desenhar os grãos por cima
+    da waveform. Cada voz escreve aqui a posição (0-1, fração do buffer) dos
+    seus grãos ativos; -1 significa "sem grão nesse slot". Só leituras e
+    escritas atómicas — nada de locks entre a audio thread e a UI thread.
+*/
+struct GrainVisualizer
+{
+    static constexpr int grainsPerVoice = 3;
+    static constexpr int maxVoices = 8;
+    static constexpr int maxVisibleGrains = grainsPerVoice * maxVoices;
+
+    std::array<std::atomic<float>, maxVisibleGrains> positions;
+
+    GrainVisualizer() { for (auto& p : positions) p.store (-1.0f); }
+};
+
 /** O "som" carregado — o buffer de áudio do sample e a nota raiz (C4/60). */
 class ZenithSamplerSound : public juce::SynthesiserSound
 {
@@ -62,7 +79,10 @@ private:
 class ZenithSamplerVoice : public juce::SynthesiserVoice
 {
 public:
-    explicit ZenithSamplerVoice (const SamplerVoiceParams& engineParams) : params (engineParams) {}
+    explicit ZenithSamplerVoice (const SamplerVoiceParams& engineParams, GrainVisualizer& visualizerToUse, int slotBaseToUse)
+        : params (engineParams), visualizer (visualizerToUse), slotBase (slotBaseToUse)
+    {
+    }
 
     bool canPlaySound (juce::SynthesiserSound* sound) override
     {
@@ -110,6 +130,7 @@ public:
             adsr.reset();
             clearCurrentNote();
             currentSound = nullptr;
+            clearVisualization();
         }
     }
 
@@ -131,6 +152,7 @@ public:
             {
                 clearCurrentNote();
                 currentSound = nullptr;
+                clearVisualization();
                 break;
             }
 
@@ -257,12 +279,37 @@ private:
             if (g.ageSamples >= g.lengthSamples || g.readPos < 0.0 || g.readPos >= (double) (numSourceSamples - 1))
                 g.active = false;
         }
+
+        // Publica as posições dos primeiros grãos ativos, para a UI os
+        // desenhar por cima da waveform (WaveformDisplay lê isto ~30x/s).
+        int shown = 0;
+        for (auto& g : grains)
+        {
+            if (shown >= GrainVisualizer::grainsPerVoice)
+                break;
+            if (g.active)
+            {
+                const auto norm = (float) (g.readPos / (double) juce::jmax (1, numSourceSamples - 1));
+                visualizer.positions[slotBase + shown].store (juce::jlimit (0.0f, 1.0f, norm));
+                ++shown;
+            }
+        }
+        for (; shown < GrainVisualizer::grainsPerVoice; ++shown)
+            visualizer.positions[slotBase + shown].store (-1.0f);
+    }
+
+    void clearVisualization()
+    {
+        for (int i = 0; i < GrainVisualizer::grainsPerVoice; ++i)
+            visualizer.positions[slotBase + i].store (-1.0f);
     }
 
     static constexpr int maxGrains = 16;
     static constexpr float grainGain = 0.6f; // atenuação para evitar acumulação de volume com muitos grãos
 
     const SamplerVoiceParams& params;
+    GrainVisualizer& visualizer;
+    int slotBase;
     ZenithSamplerSound* currentSound = nullptr;
 
     // leitura linear (Fase 2)
@@ -291,10 +338,20 @@ public:
     void connectParameters (SamplerVoiceParams paramsToUse) { voiceParams = paramsToUse; }
     bool hasSampleLoaded() const { return sampleLoaded; }
 
+    /** Cópia segura (thread-safe) das posições dos grãos ativos, para a UI desenhar. */
+    std::array<float, GrainVisualizer::maxVisibleGrains> getGrainSnapshot() const
+    {
+        std::array<float, GrainVisualizer::maxVisibleGrains> out;
+        for (int i = 0; i < GrainVisualizer::maxVisibleGrains; ++i)
+            out[(size_t) i] = grainVisualizer.positions[(size_t) i].load();
+        return out;
+    }
+
 private:
     juce::Synthesiser synth;
     juce::AudioFormatManager formatManager;
     SamplerVoiceParams voiceParams;
+    GrainVisualizer grainVisualizer;
     bool sampleLoaded = false;
-    static constexpr int numVoices = 8;
+    static constexpr int numVoices = GrainVisualizer::maxVoices;
 };
