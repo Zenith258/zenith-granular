@@ -4,6 +4,7 @@
 #include <juce_audio_formats/juce_audio_formats.h>
 #include <array>
 #include <atomic>
+#include <cmath>
 
 /**
     Ponteiros para os valores ao vivo da APVTS. Cada voz consulta isto a cada
@@ -46,6 +47,46 @@ struct GrainVisualizer
 
     GrainVisualizer() { for (auto& p : positions) p.store (-1.0f); }
 };
+
+/**
+    Tabela pré-calculada da janela Hann (1024 pontos), partilhada por todas
+    as vozes. Evita chamar std::cos() em cada amostra de cada grão — com
+    até 16 grãos por voz × 8 vozes, isso seria até 128 chamadas de cosseno
+    por amostra de áudio. Uma tabela + interpolação linear é muito mais leve.
+*/
+class HannWindowTable
+{
+public:
+    static constexpr int size = 1024;
+
+    HannWindowTable()
+    {
+        for (int i = 0; i < size; ++i)
+        {
+            const auto t = (float) i / (float) (size - 1);
+            table[(size_t) i] = 0.5f - 0.5f * std::cos (juce::MathConstants<float>::twoPi * t);
+        }
+    }
+
+    /** t deve estar entre 0.0 e 1.0. */
+    float getValue (float t) const
+    {
+        const auto pos = juce::jlimit (0.0f, (float) (size - 1), t * (float) (size - 1));
+        const auto i0 = (int) pos;
+        const auto i1 = juce::jmin (i0 + 1, size - 1);
+        const auto frac = pos - (float) i0;
+        return table[(size_t) i0] + frac * (table[(size_t) i1] - table[(size_t) i0]);
+    }
+
+private:
+    std::array<float, size> table;
+};
+
+inline const HannWindowTable& getHannWindowTable()
+{
+    static const HannWindowTable table;
+    return table;
+}
 
 /** O "som" carregado — o buffer de áudio do sample e a nota raiz (C4/60). */
 class ZenithSamplerSound : public juce::SynthesiserSound
@@ -168,12 +209,15 @@ public:
             }
 
             const auto mix = params.granularMix != nullptr
-                                ? juce::jlimit (0.0f, 1.0f, params.granularMix->load() / 100.0f)
+                                ? juce::jlimit (0.0f, 1.0f, params.granularMix->load (std::memory_order_relaxed) / 100.0f)
                                 : 0.0f;
 
             float grainL = 0.0f, grainR = 0.0f;
             if (mix > 0.0001f)
+            {
                 advanceGrains (data, numSourceChannels, numSourceSamples, grainL, grainR);
+                grainsActiveThisBlock = true;
+            }
 
             for (int ch = 0; ch < outputBuffer.getNumChannels(); ++ch)
             {
@@ -193,6 +237,12 @@ public:
 
             if (dryValid)
                 sourcePosition += pitchRatio;
+        }
+
+        if (grainsActiveThisBlock)
+        {
+            publishVisualization (numSourceSamples);
+            grainsActiveThisBlock = false;
         }
     }
 
@@ -242,7 +292,7 @@ private:
     void advanceGrains (const juce::AudioBuffer<float>& data, int numSourceChannels, int numSourceSamples,
                          float& outL, float& outR)
     {
-        const auto density = params.grainDensity != nullptr ? juce::jmax (0.1f, params.grainDensity->load()) : 20.0f;
+        const auto density = params.grainDensity != nullptr ? juce::jmax (0.1f, params.grainDensity->load (std::memory_order_relaxed)) : 20.0f;
 
         samplesUntilNextGrain -= 1.0;
         if (samplesUntilNextGrain <= 0.0)
@@ -257,7 +307,7 @@ private:
                 continue;
 
             const auto t = (float) g.ageSamples / (float) g.lengthSamples;
-            const auto window = 0.5f - 0.5f * std::cos (juce::MathConstants<float>::twoPi * t); // janela Hann
+            const auto window = getHannWindowTable().getValue (t);
 
             const auto pos  = (int) g.readPos;
             const auto frac = (float) (g.readPos - (double) pos);
@@ -279,9 +329,16 @@ private:
             if (g.ageSamples >= g.lengthSamples || g.readPos < 0.0 || g.readPos >= (double) (numSourceSamples - 1))
                 g.active = false;
         }
+    }
 
-        // Publica as posições dos primeiros grãos ativos, para a UI os
-        // desenhar por cima da waveform (WaveformDisplay lê isto ~30x/s).
+    /**
+        Publica as posições dos primeiros grãos ativos para a UI desenhar
+        (WaveformDisplay lê isto a ~30x/s). Chamado só UMA VEZ por bloco de
+        áudio (não por amostra) — a UI não precisa de mais resolução que
+        isso, e cada chamada evitada poupa até 3 escritas atómicas por voz.
+    */
+    void publishVisualization (int numSourceSamples)
+    {
         int shown = 0;
         for (auto& g : grains)
         {
@@ -323,6 +380,7 @@ private:
     std::array<Grain, maxGrains> grains;
     double samplesUntilNextGrain = 0.0;
     juce::Random random;
+    bool grainsActiveThisBlock = false;
 };
 
 /** Wrapper de alto nível: carrega um ficheiro de áudio e expõe render/prepare ao PluginProcessor. */

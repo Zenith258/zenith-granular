@@ -9,6 +9,8 @@ void ReverbEngine::prepare (const juce::dsp::ProcessSpec& spec)
 void ReverbEngine::process (juce::AudioBuffer<float>& buffer)
 {
     const auto mix = params.mix != nullptr ? juce::jlimit (0.0f, 1.0f, params.mix->load() / 100.0f) : 0.0f;
+    if (mix <= 0.0001f)
+        return; // poupa CPU: sem reverb ativo, nem vale a pena correr o algoritmo
 
     juce::dsp::Reverb::Parameters p;
     p.roomSize = params.size    != nullptr ? juce::jlimit (0.0f, 1.0f, params.size->load()    / 100.0f) : 0.5f;

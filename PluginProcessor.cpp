@@ -1,5 +1,6 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include <cmath>
 
 ZenithGranularAudioProcessor::ZenithGranularAudioProcessor()
     : AudioProcessor (BusesProperties()
@@ -212,9 +213,9 @@ void ZenithGranularAudioProcessor::processBlock (juce::AudioBuffer<float>& buffe
 {
     juce::ScopedNoDenormals noDenormals;
 
-    for (auto ch = getTotalNumInputChannels(); ch < getTotalNumOutputChannels(); ++ch)
-        buffer.clear (ch, 0, buffer.getNumSamples());
-
+    // Como este é um instrumento (sem entrada de áudio real), o buffer só
+    // precisa de ser limpo uma vez — o loop por canal que havia aqui antes
+    // era redundante, buffer.clear() já limpa todos os canais.
     buffer.clear();
     samplerEngine.renderNextBlock (buffer, midiMessages, 0, buffer.getNumSamples());
 
@@ -222,6 +223,18 @@ void ZenithGranularAudioProcessor::processBlock (juce::AudioBuffer<float>& buffe
     saturationEngine.process (buffer);
     delayEngine.process (buffer);
     reverbEngine.process (buffer);
+
+    // Rede de segurança: nunca deixar sair NaN/Inf (podem surgir de
+    // feedback extremo no delay/reverb) nem picos absurdos para o host.
+    for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+    {
+        auto* data = buffer.getWritePointer (ch);
+        for (int i = 0; i < buffer.getNumSamples(); ++i)
+        {
+            auto& s = data[i];
+            s = std::isfinite (s) ? juce::jlimit (-2.0f, 2.0f, s) : 0.0f;
+        }
+    }
 }
 
 juce::AudioProcessorEditor* ZenithGranularAudioProcessor::createEditor()

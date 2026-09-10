@@ -171,6 +171,7 @@ private:
 
     std::unique_ptr<juce::FileChooser> fileChooser;
     bool isDraggingFileOver = false;
+    std::vector<float> grainPositionsScratch;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ZenithGranularAudioProcessorEditor)
 };

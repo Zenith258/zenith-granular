@@ -64,5 +64,26 @@ Pontos roxos aparecem sobre a waveform, movendo-se de acordo com a posição
 real de leitura dos grãos ativos no motor granular - atualizado ~30x por
 segundo. Só é visível quando o "Granular Mix" está acima de 0%.
 
-## Próximo passo (Fase 7c)
-Mais refinamento visual, e depois a biblioteca nativa de samples (Fase 6b).
+## Otimização de CPU (Fase 8)
+- Janela dos grãos (Hann): passou de calcular std::cos() em cada amostra de
+  cada grão para uma tabela pré-calculada (1024 pontos) com interpolação —
+  isto evitava até 128 chamadas de cosseno por amostra de áudio (16 grãos x
+  8 vozes), agora é só uma leitura de tabela.
+- Visualização dos grãos: passou de publicar a posição a cada amostra de
+  áudio para publicar só uma vez por bloco (a UI só precisa de ~30
+  atualizações por segundo, não 44100).
+- Parâmetros lidos a cada amostra (Granular Mix, Grain Density) agora usam
+  leitura atómica "relaxed" em vez do modo mais lento por omissão — seguro
+  aqui porque não precisamos de sincronizar com mais nada.
+- Removida uma limpeza de buffer duplicada no processBlock.
+- Lado da UI: a lista de posições dos grãos deixou de ser recriada 30x por
+  segundo, agora reutiliza a mesma memória.
+- Reverb agora só corre o algoritmo quando o "Reverb Mix" está acima de 0%
+  (Delay e Saturação já faziam isto).
+- Rede de segurança no fim da cadeia: qualquer NaN/Inf (pode surgir de
+  feedback extremo no delay/reverb) é substituído por silêncio, e picos
+  extremos são limitados, antes de chegar ao host.
+
+## Próximo passo
+Fase 6b (biblioteca nativa de samples) ou Fase 9 (testes em diferentes
+sample rates/DAWs), conforme preferires.

@@ -376,8 +376,8 @@ void ZenithGranularAudioProcessorEditor::promptSavePreset()
 void ZenithGranularAudioProcessorEditor::timerCallback()
 {
     const auto snapshot = audioProcessor.getGrainSnapshot();
-    std::vector<float> positions (snapshot.begin(), snapshot.end());
-    waveformDisplay.setGrainPositions (positions);
+    grainPositionsScratch.assign (snapshot.begin(), snapshot.end());
+    waveformDisplay.setGrainPositions (grainPositionsScratch);
 }
 
 void ZenithGranularAudioProcessorEditor::loadFile (const juce::File& file)
