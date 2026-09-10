@@ -11,9 +11,11 @@ struct DelayEngineParams
 };
 
 /**
-    Delay simples com feedback, tempo em milissegundos. Sincronização ao BPM
-    do FL Studio fica para uma fase de refinamento posterior (precisa de ler
-    o AudioPlayHead do processor, que ainda não está ligado).
+    Delay simples com feedback, tempo em milissegundos. O buffer interno é
+    dimensionado em prepare() com base no sample rate REAL do projeto — um
+    tamanho fixo (calculado só para 44.1/48kHz) cortaria o delay em projetos
+    a 96kHz ou 192kHz. Sincronização ao BPM do FL Studio fica para uma fase
+    de refinamento posterior.
 */
 class DelayEngine
 {
@@ -23,7 +25,7 @@ public:
     void connectParameters (DelayEngineParams p) { params = p; }
 
 private:
-    juce::dsp::DelayLine<float> delayLine { 192000 }; // até 4s a 48kHz
+    juce::dsp::DelayLine<float> delayLine;
     double currentSampleRate = 44100.0;
     DelayEngineParams params;
 };

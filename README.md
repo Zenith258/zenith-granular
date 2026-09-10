@@ -84,6 +84,24 @@ segundo. Só é visível quando o "Granular Mix" está acima de 0%.
   feedback extremo no delay/reverb) é substituído por silêncio, e picos
   extremos são limitados, antes de chegar ao host.
 
+## Fase 9 - testes em diferentes sample rates/buffer sizes
+Auditoria ao código à procura de valores fixos que só funcionassem a
+44.1/48kHz. Encontrado e corrigido um bug real:
+- O buffer interno do Delay tinha um tamanho fixo (calculado só para
+  48kHz). A 96kHz ou 192kHz, um delay de 2 segundos ultrapassaria esse
+  limite. Agora o buffer é dimensionado com base no sample rate real do
+  projeto, sempre que o FL Studio muda de sample rate ou buffer size.
+- Confirmado que todo o resto (ADSR, pitch, grain size, filtro, reverb)
+  já calculava tudo a partir de getSampleRate()/spec.sampleRate reais, sem
+  valores fixos escondidos.
+
+### Como testar do teu lado (não consigo correr o FL Studio por aqui)
+1. No FL Studio: Options > Audio Settings > muda a "Sample rate" para
+   44100, depois 48000, depois 96000. Toca uma nota longa com Delay Mix e
+   Feedback altos em cada uma - não deve haver diferença de comportamento
+   nem estalos.
+2. Muda o "Buffer length" (no mesmo painel) entre valores pequenos (64/128)
+   e grandes (1024/2048) - o som deve continuar igual, só a latência muda.
+3. Testa numa faixa mono e numa estéreo, se o FL Studio deixar.
+
 ## Próximo passo
-Fase 6b (biblioteca nativa de samples) ou Fase 9 (testes em diferentes
-sample rates/DAWs), conforme preferires.
